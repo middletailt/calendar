@@ -1,0 +1,373 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		E10000010000000000000001 /* CalendarApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000010000000000000001 /* CalendarApp.swift */; };
+		E10000010000000000000002 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000010000000000000002 /* AppState.swift */; };
+		E10000010000000000000003 /* LocalDay.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000010000000000000003 /* LocalDay.swift */; };
+		E10000010000000000000004 /* SyncState.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000010000000000000004 /* SyncState.swift */; };
+		E10000010000000000000005 /* RecurrenceRule.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000010000000000000005 /* RecurrenceRule.swift */; };
+		E10000010000000000000006 /* EventDraft.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000010000000000000006 /* EventDraft.swift */; };
+		E10000010000000000000007 /* CalendarEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000010000000000000007 /* CalendarEvent.swift */; };
+		E10000010000000000000008 /* SubscribedCalendar.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000010000000000000008 /* SubscribedCalendar.swift */; };
+		E10000010000000000000009 /* EventStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000010000000000000009 /* EventStore.swift */; };
+		E10000010000000000000010 /* GoogleCalendarSyncing.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000010000000000000010 /* GoogleCalendarSyncing.swift */; };
+		E10000010000000000000011 /* MonthGridBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000010000000000000011 /* MonthGridBuilder.swift */; };
+		E10000010000000000000012 /* MainCalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000010000000000000012 /* MainCalendarView.swift */; };
+		E10000010000000000000013 /* MonthDayCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000010000000000000013 /* MonthDayCell.swift */; };
+		E10000010000000000000014 /* DayEventsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000010000000000000014 /* DayEventsSheet.swift */; };
+		E10000010000000000000015 /* EventEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000010000000000000015 /* EventEditorView.swift */; };
+		E10000010000000000000016 /* MultiDayPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000010000000000000016 /* MultiDayPickerView.swift */; };
+		E10000010000000000000017 /* RecurrenceSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000010000000000000017 /* RecurrenceSettingsView.swift */; };
+		E10000010000000000000018 /* ReminderSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000010000000000000018 /* ReminderSettingsView.swift */; };
+		E10000010000000000000019 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E20000010000000000000019 /* Assets.xcassets */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		E20000010000000000000001 /* CalendarApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarApp.swift; sourceTree = "<group>"; };
+		E20000010000000000000002 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
+		E20000010000000000000003 /* LocalDay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalDay.swift; sourceTree = "<group>"; };
+		E20000010000000000000004 /* SyncState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncState.swift; sourceTree = "<group>"; };
+		E20000010000000000000005 /* RecurrenceRule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecurrenceRule.swift; sourceTree = "<group>"; };
+		E20000010000000000000006 /* EventDraft.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventDraft.swift; sourceTree = "<group>"; };
+		E20000010000000000000007 /* CalendarEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarEvent.swift; sourceTree = "<group>"; };
+		E20000010000000000000008 /* SubscribedCalendar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscribedCalendar.swift; sourceTree = "<group>"; };
+		E20000010000000000000009 /* EventStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventStore.swift; sourceTree = "<group>"; };
+		E20000010000000000000010 /* GoogleCalendarSyncing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleCalendarSyncing.swift; sourceTree = "<group>"; };
+		E20000010000000000000011 /* MonthGridBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthGridBuilder.swift; sourceTree = "<group>"; };
+		E20000010000000000000012 /* MainCalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainCalendarView.swift; sourceTree = "<group>"; };
+		E20000010000000000000013 /* MonthDayCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthDayCell.swift; sourceTree = "<group>"; };
+		E20000010000000000000014 /* DayEventsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayEventsSheet.swift; sourceTree = "<group>"; };
+		E20000010000000000000015 /* EventEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventEditorView.swift; sourceTree = "<group>"; };
+		E20000010000000000000016 /* MultiDayPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MultiDayPickerView.swift; sourceTree = "<group>"; };
+		E20000010000000000000017 /* RecurrenceSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecurrenceSettingsView.swift; sourceTree = "<group>"; };
+		E20000010000000000000018 /* ReminderSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderSettingsView.swift; sourceTree = "<group>"; };
+		E20000010000000000000019 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		E20000010000000000000020 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		E30000010000000000000001 /* Calendar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Calendar.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		E40000010000000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		E50000010000000000000001 = {
+			isa = PBXGroup;
+			children = (
+				E50000010000000000000002 /* Calendar */,
+				E50000010000000000000003 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		E50000010000000000000002 /* Calendar */ = {
+			isa = PBXGroup;
+			children = (
+				E20000010000000000000001 /* CalendarApp.swift */,
+				E50000010000000000000004 /* App */,
+				E50000010000000000000005 /* Models */,
+				E50000010000000000000006 /* Services */,
+				E50000010000000000000007 /* Utilities */,
+				E50000010000000000000008 /* Views */,
+				E50000010000000000000009 /* Resources */,
+			);
+			path = Calendar;
+			sourceTree = "<group>";
+		};
+		E50000010000000000000003 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				E30000010000000000000001 /* Calendar.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		E50000010000000000000004 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				E20000010000000000000002 /* AppState.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		E50000010000000000000005 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				E20000010000000000000003 /* LocalDay.swift */,
+				E20000010000000000000004 /* SyncState.swift */,
+				E20000010000000000000005 /* RecurrenceRule.swift */,
+				E20000010000000000000006 /* EventDraft.swift */,
+				E20000010000000000000007 /* CalendarEvent.swift */,
+				E20000010000000000000008 /* SubscribedCalendar.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		E50000010000000000000006 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				E20000010000000000000009 /* EventStore.swift */,
+				E20000010000000000000010 /* GoogleCalendarSyncing.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		E50000010000000000000007 /* Utilities */ = {
+			isa = PBXGroup;
+			children = (
+				E20000010000000000000011 /* MonthGridBuilder.swift */,
+			);
+			path = Utilities;
+			sourceTree = "<group>";
+		};
+		E50000010000000000000008 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				E20000010000000000000012 /* MainCalendarView.swift */,
+				E20000010000000000000013 /* MonthDayCell.swift */,
+				E20000010000000000000014 /* DayEventsSheet.swift */,
+				E50000010000000000000010 /* EventEditor */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		E50000010000000000000009 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				E20000010000000000000019 /* Assets.xcassets */,
+				E20000010000000000000020 /* Info.plist */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		E50000010000000000000010 /* EventEditor */ = {
+			isa = PBXGroup;
+			children = (
+				E20000010000000000000015 /* EventEditorView.swift */,
+				E20000010000000000000016 /* MultiDayPickerView.swift */,
+				E20000010000000000000017 /* RecurrenceSettingsView.swift */,
+				E20000010000000000000018 /* ReminderSettingsView.swift */,
+			);
+			path = EventEditor;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		E60000010000000000000001 /* Calendar */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E80000010000000000000003 /* Build configuration list for PBXNativeTarget "Calendar" */;
+			buildPhases = (
+				E60000010000000000000002 /* Sources */,
+				E40000010000000000000001 /* Frameworks */,
+				E60000010000000000000003 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Calendar;
+			productName = Calendar;
+			productReference = E30000010000000000000001 /* Calendar.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		E70000010000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1620;
+				LastUpgradeCheck = 1620;
+				TargetAttributes = {
+					E60000010000000000000001 = {
+						CreatedOnToolsVersion = 16.2;
+					};
+				};
+			};
+			buildConfigurationList = E80000010000000000000001 /* Build configuration list for PBXProject "Calendar" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = ja;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+				ja,
+			);
+			mainGroup = E50000010000000000000001;
+			productRefGroup = E50000010000000000000003 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				E60000010000000000000001 /* Calendar */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		E60000010000000000000003 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E10000010000000000000019 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		E60000010000000000000002 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E10000010000000000000001 /* CalendarApp.swift in Sources */,
+				E10000010000000000000002 /* AppState.swift in Sources */,
+				E10000010000000000000003 /* LocalDay.swift in Sources */,
+				E10000010000000000000004 /* SyncState.swift in Sources */,
+				E10000010000000000000005 /* RecurrenceRule.swift in Sources */,
+				E10000010000000000000006 /* EventDraft.swift in Sources */,
+				E10000010000000000000007 /* CalendarEvent.swift in Sources */,
+				E10000010000000000000008 /* SubscribedCalendar.swift in Sources */,
+				E10000010000000000000009 /* EventStore.swift in Sources */,
+				E10000010000000000000010 /* GoogleCalendarSyncing.swift in Sources */,
+				E10000010000000000000011 /* MonthGridBuilder.swift in Sources */,
+				E10000010000000000000012 /* MainCalendarView.swift in Sources */,
+				E10000010000000000000013 /* MonthDayCell.swift in Sources */,
+				E10000010000000000000014 /* DayEventsSheet.swift in Sources */,
+				E10000010000000000000015 /* EventEditorView.swift in Sources */,
+				E10000010000000000000016 /* MultiDayPickerView.swift in Sources */,
+				E10000010000000000000017 /* RecurrenceSettingsView.swift in Sources */,
+				E10000010000000000000018 /* ReminderSettingsView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		E90000010000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		E90000010000000000000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_OPTIMIZATION_LEVEL = s;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		E90000010000000000000003 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Calendar/Resources/Info.plist;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.middletail.calendar;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		E90000010000000000000004 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Calendar/Resources/Info.plist;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.middletail.calendar;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		E80000010000000000000001 /* Build configuration list for PBXProject "Calendar" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E90000010000000000000001 /* Debug */,
+				E90000010000000000000002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		E80000010000000000000003 /* Build configuration list for PBXNativeTarget "Calendar" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E90000010000000000000003 /* Debug */,
+				E90000010000000000000004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = E70000010000000000000001 /* Project object */;
+}
