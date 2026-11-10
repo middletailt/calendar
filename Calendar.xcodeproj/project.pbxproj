@@ -47,6 +47,8 @@
 		E10000010000000000000039 /* EventDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000010000000000000040 /* EventDetailView.swift */; };
 		E10000010000000000000040 /* EventSearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000010000000000000041 /* EventSearchView.swift */; };
 		E10000010000000000000043 /* MonthCalendarPager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000010000000000000043 /* MonthCalendarPager.swift */; };
+		E10000010000000000000044 /* MonthUIKitScrollPager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000010000000000000044 /* MonthUIKitScrollPager.swift */; };
+		E10000010000000000000045 /* MonthPagerStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000010000000000000045 /* MonthPagerStyle.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -91,6 +93,8 @@
 		E20000010000000000000040 /* EventDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventDetailView.swift; sourceTree = "<group>"; };
 		E20000010000000000000041 /* EventSearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventSearchView.swift; sourceTree = "<group>"; };
 		E20000010000000000000043 /* MonthCalendarPager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthCalendarPager.swift; sourceTree = "<group>"; };
+		E20000010000000000000044 /* MonthUIKitScrollPager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthUIKitScrollPager.swift; sourceTree = "<group>"; };
+		E20000010000000000000045 /* MonthPagerStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthPagerStyle.swift; sourceTree = "<group>"; };
 		E30000010000000000000001 /* Calendar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Calendar.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -183,6 +187,7 @@
 			isa = PBXGroup;
 			children = (
 				E20000010000000000000011 /* MonthGridBuilder.swift */,
+				E20000010000000000000045 /* MonthPagerStyle.swift */,
 			);
 			path = Utilities;
 			sourceTree = "<group>";
@@ -192,6 +197,7 @@
 			children = (
 				E20000010000000000000012 /* MainCalendarView.swift */,
 				E20000010000000000000043 /* MonthCalendarPager.swift */,
+				E20000010000000000000044 /* MonthUIKitScrollPager.swift */,
 				E20000010000000000000013 /* MonthDayCell.swift */,
 				E20000010000000000000039 /* ClippingSingleLineText.swift */,
 				E20000010000000000000014 /* DayEventsSheet.swift */,
@@ -332,6 +338,8 @@
 				E10000010000000000000011 /* MonthGridBuilder.swift in Sources */,
 				E10000010000000000000012 /* MainCalendarView.swift in Sources */,
 				E10000010000000000000043 /* MonthCalendarPager.swift in Sources */,
+				E10000010000000000000044 /* MonthUIKitScrollPager.swift in Sources */,
+				E10000010000000000000045 /* MonthPagerStyle.swift in Sources */,
 				E10000010000000000000013 /* MonthDayCell.swift in Sources */,
 				E10000010000000000000014 /* DayEventsSheet.swift in Sources */,
 				E10000010000000000000015 /* EventEditorView.swift in Sources */,

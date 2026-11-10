@@ -13,8 +13,13 @@ struct MainCalendarView: View {
     @State private var presentedEvent: CalendarEvent?
     @State private var editingEvent: CalendarEvent?
     @State private var pagerPageModels: (MonthGridPageModel, MonthGridPageModel, MonthGridPageModel)?
+    @AppStorage(MonthPagerStyle.storageKey) private var monthPagerStyleRaw = MonthPagerStyle.swiftUIPager.rawValue
 
     private let daySheetAnimation: Animation = .easeOut(duration: 0.32)
+
+    private var monthPagerStyle: MonthPagerStyle {
+        MonthPagerStyle(rawValue: monthPagerStyleRaw) ?? .swiftUIPager
+    }
 
     private var visibleCalendarIds: Set<String> {
         Set(appState.calendarStore.calendars.filter(\.isVisible).map(\.id))
@@ -205,6 +210,41 @@ struct MainCalendarView: View {
         return f.string(from: date)
     }
 
+    @ViewBuilder
+    private func monthPagerView(
+        models: (MonthGridPageModel, MonthGridPageModel, MonthGridPageModel)
+    ) -> some View {
+        let onCommit: (YearMonth) -> Void = { _ in
+            rebuildPagerPageModels()
+            Task { await prefetchMonthsAroundVisible() }
+        }
+        let onDay: (LocalDay) -> Void = { day in
+            selectedDay = day
+            presentDaySheet()
+        }
+
+        switch monthPagerStyle {
+        case .swiftUIPager:
+            MonthCalendarPager(
+                prev: models.0,
+                center: models.1,
+                next: models.2,
+                visibleMonth: $visibleMonth,
+                onMonthCommitted: onCommit,
+                onSelectDay: onDay
+            )
+        case .uiScrollView:
+            MonthUIKitScrollPager(
+                prev: models.0,
+                center: models.1,
+                next: models.2,
+                visibleMonth: $visibleMonth,
+                onMonthCommitted: onCommit,
+                onSelectDay: onDay
+            )
+        }
+    }
+
     private var calendarBlock: some View {
         VStack(spacing: 0) {
             Rectangle()
@@ -212,20 +252,8 @@ struct MainCalendarView: View {
                 .frame(height: 0.5)
 
             if let pagerPageModels {
-                MonthCalendarPager(
-                    prev: pagerPageModels.0,
-                    center: pagerPageModels.1,
-                    next: pagerPageModels.2,
-                    visibleMonth: $visibleMonth,
-                    onMonthCommitted: { _ in
-                        rebuildPagerPageModels()
-                        Task { await prefetchMonthsAroundVisible() }
-                    },
-                    onSelectDay: { day in
-                        selectedDay = day
-                        presentDaySheet()
-                    }
-                )
+                monthPagerView(models: pagerPageModels)
+                    .id(monthPagerStyle)
             }
 
             Rectangle()

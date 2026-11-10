@@ -5,14 +5,27 @@ struct GoogleSettingsView: View {
     @Environment(AppState.self) private var appState
     @Environment(\.dismiss) private var dismiss
 
-  @State private var isWorking = false
+    @State private var isWorking = false
     @State private var message: String?
+    @AppStorage(MonthPagerStyle.storageKey) private var monthPagerStyleRaw = MonthPagerStyle.swiftUIPager.rawValue
 
     private var sync: GoogleCalendarSyncService { appState.googleSync }
 
     var body: some View {
         NavigationStack {
             List {
+                Section("月グリッド（A/B）") {
+                    Picker("ページング実装", selection: $monthPagerStyleRaw) {
+                        ForEach(MonthPagerStyle.allCases) { style in
+                            Text(style.label).tag(style.rawValue)
+                        }
+                    }
+                    .pickerStyle(.inline)
+                    Text("変更はメイン画面に戻ると反映されます。")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
                 Section("通知（ローカル）") {
                     Text("リモート Push ではなく、端末内の予定リマインダーです。App ID の Push Notifications capability は不要です。")
                         .font(.caption)

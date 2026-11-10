@@ -7,6 +7,7 @@ Google 連携のセットアップ: [google-calendar-setup.md](google-calendar-s
 - 複数 `calendarId`、それぞれ `syncToken`（UserDefaults + SwiftData の `StoredSubscribedCalendar.syncToken`）
 - **初回・手動同期**: 今月を中心に **±1 ヶ月（計 3 ヶ月）** の `events.list`（`timeMin` / `timeMax`）。範囲外は削除せずマージ（`applyRangeMerge`）
 - **月表示の追撃**: `visibleMonth` が未取得なら同じ **3 ヶ月窓** を取得（`SyncedMonthStore` で月単位管理）
+- **月グリッド A/B**（設定）: `MonthCalendarPager`（SwiftUI Gesture）と `MonthUIKitScrollPager`（`UIScrollView.isPagingEnabled`）
 - **増分**: `syncToken` あり・ローカルに同期済みあり → `events.list` + syncToken のみ（トークン無効時は 3 ヶ月窓で再ブート）
 - Push: Outbox → `StoredOutboxItem`（旧 JSON から初回マイグレーション）
 - 正: Google、競合時は Google 優先
