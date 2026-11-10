@@ -38,7 +38,7 @@ final class AppState {
     }
 
     func rebuildNotifications() async {
-        await localNotifications.reschedule(events: eventStore.events)
+        await localNotifications.reschedule(events: eventStore.eventsForNotificationScheduling())
     }
 
     static var preview: AppState {

@@ -97,14 +97,25 @@ struct MainCalendarView: View {
                 _ = await appState.localNotifications.requestAuthorizationIfNeeded()
                 if appState.googleSync.isSignedIn {
                     try? await appState.googleSync.syncAllCalendars()
+                    appState.eventStore.refreshMemoryCache(center: visibleMonth)
+                    rebuildPagerPageModels()
                     await prefetchMonthsAroundVisible()
                 }
                 await appState.rebuildNotifications()
             }
-            .onAppear { rebuildPagerPageModels() }
-            .onChange(of: visibleMonth) { _, _ in rebuildPagerPageModels() }
+            .onAppear {
+                appState.eventStore.refreshMemoryCache(center: visibleMonth)
+                rebuildPagerPageModels()
+            }
+            .onChange(of: visibleMonth) { _, newMonth in
+                appState.eventStore.refreshMemoryCache(center: newMonth)
+                rebuildPagerPageModels()
+            }
             .onChange(of: selectedDay) { _, _ in rebuildPagerPageModels() }
-            .onChange(of: appState.eventStore.events.count) { _, _ in rebuildPagerPageModels() }
+            .onChange(of: appState.eventStore.events.count) { _, _ in
+                appState.eventStore.refreshMemoryCache(center: visibleMonth)
+                rebuildPagerPageModels()
+            }
         }
     }
 

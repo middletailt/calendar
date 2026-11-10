@@ -12,6 +12,12 @@ Google 連携のセットアップ: [google-calendar-setup.md](google-calendar-s
 - Push: Outbox → `StoredOutboxItem`（旧 JSON から初回マイグレーション）
 - 正: Google、競合時は Google 優先
 
+## メモリ
+
+- `EventStore.events` は **表示月 ±4 ヶ月** のみメモリ保持（`refreshMemoryCache`）。SwiftData には全キャッシュが残る
+- 検索・通知は必要時に DB から範囲取得
+- 月セルは **4 行まで** 表示（`MonthGridLimits`）
+
 ## ローカル永続化（SwiftData）
 
 | モデル | 内容 |

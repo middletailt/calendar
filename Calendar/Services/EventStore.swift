@@ -12,7 +12,15 @@ final class EventStore {
     init(events: [CalendarEvent] = [], context: ModelContext? = nil) {
         self.context = context
         if let context, events.isEmpty {
-            self.events = Self.fetchEvents(from: context)
+            let center = YearMonth.current()
+            if let range = YearMonth.syncTimeRange(
+                center: center,
+                radiusMonths: MonthGridLimits.memoryWindowRadiusMonths
+            ) {
+                self.events = Self.fetchEvents(from: context, from: range.timeMin, to: range.timeMax)
+            } else {
+                self.events = []
+            }
             dedupeSyncedEvents()
         } else {
             self.events = events
@@ -113,7 +121,13 @@ final class EventStore {
     func search(query: String, visibleCalendarIds: Set<String>, limit: Int = 80) -> [CalendarEvent] {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return [] }
-        return events
+        let source: [CalendarEvent]
+        if let context {
+            source = Self.fetchEvents(from: context)
+        } else {
+            source = events
+        }
+        return source
             .filter { visibleCalendarIds.contains($0.calendarId) }
             .filter { event in
                 event.title.localizedCaseInsensitiveContains(trimmed)
@@ -166,6 +180,29 @@ final class EventStore {
             .sorted(by: { $0.start < $1.start })
     }
 
+    /// メモリ上の `events` を表示中心付近だけに絞る（ディスク上は全件のまま）。
+    func refreshMemoryCache(center: YearMonth, radiusMonths: Int = MonthGridLimits.memoryWindowRadiusMonths) {
+        guard let context else { return }
+        guard let range = YearMonth.syncTimeRange(center: center, radiusMonths: radiusMonths) else { return }
+
+        let pending = events.filter { $0.syncState != .synced }
+        var windowed = Self.fetchEvents(from: context, from: range.timeMin, to: range.timeMax)
+        let inWindow = Set(windowed.map(\.id))
+        for event in pending where !inWindow.contains(event.id) {
+            windowed.append(event)
+        }
+        events = windowed
+    }
+
+    /// 通知再スケジュール用（直近のみ DB から取得）
+    func eventsForNotificationScheduling(calendar: Calendar = .current) -> [CalendarEvent] {
+        guard let context else { return events }
+        let now = Date()
+        guard let horizon = calendar.date(byAdding: .month, value: 4, to: now) else { return events }
+        let lookback = calendar.date(byAdding: .day, value: -1, to: now) ?? now
+        return Self.fetchEvents(from: context, from: lookback, to: horizon)
+    }
+
     /// 月グリッド 1 枚分の行データをまとめて構築（ドラッグ中の再計算を抑える）。
     func eventLinesByDay(
         for month: YearMonth,
@@ -176,13 +213,60 @@ final class EventStore {
         var map: [LocalDay: [MonthCellEventLine]] = [:]
         map.reserveCapacity(days.count)
         for cell in days {
-            map[cell.day] = monthCellEventLines(
-                on: cell.day,
-                visibleCalendarIds: visibleCalendarIds,
-                holidayCalendarIds: holidayCalendarIds
-            )
+            map[cell.day] = []
+        }
+
+        let calendarIds = visibleCalendarIds.union(holidayCalendarIds)
+        guard let monthRange = YearMonth.syncTimeRange(center: month, radiusMonths: 1) else { return map }
+
+        let candidates = events
+            .filter { calendarIds.contains($0.calendarId) }
+            .filter { eventIntersectsRange($0, timeMin: monthRange.timeMin, timeMax: monthRange.timeMax) }
+            .sorted { lhs, rhs in
+                let lhsHoliday = holidayCalendarIds.contains(lhs.calendarId)
+                let rhsHoliday = holidayCalendarIds.contains(rhs.calendarId)
+                if lhsHoliday != rhsHoliday { return lhsHoliday }
+                if lhs.isAllDay != rhs.isAllDay { return lhs.isAllDay }
+                return lhs.start < rhs.start
+            }
+        for event in candidates {
+            for cell in days where event.occurs(on: cell.day) {
+                map[cell.day, default: []].append(makeMonthCellLine(for: event, holidayCalendarIds: holidayCalendarIds))
+            }
+        }
+
+        for day in map.keys {
+            guard var lines = map[day] else { continue }
+            lines.sort { lhs, rhs in
+                if lhs.isHoliday != rhs.isHoliday { return lhs.isHoliday }
+                if lhs.style != rhs.style { return lhs.style == .band }
+                return lhs.title < rhs.title
+            }
+            if lines.count > MonthGridLimits.maxEventLinesPerDay {
+                lines = Array(lines.prefix(MonthGridLimits.maxEventLinesPerDay))
+            }
+            map[day] = lines
         }
         return map
+    }
+
+    private func eventIntersectsRange(_ event: CalendarEvent, timeMin: Date, timeMax: Date) -> Bool {
+        if event.isAllDay {
+            return event.end > timeMin && event.start < timeMax
+        }
+        return event.end > timeMin && event.start < timeMax
+    }
+
+    private func makeMonthCellLine(for event: CalendarEvent, holidayCalendarIds: Set<String>) -> MonthCellEventLine {
+        let isHoliday = holidayCalendarIds.contains(event.calendarId)
+        let useBand = isHoliday || event.isAllDay
+        return MonthCellEventLine(
+            id: event.id,
+            title: event.title,
+            isHoliday: isHoliday,
+            style: useBand ? .band : .compact,
+            accentColor: event.color
+        )
     }
 
     /// 月グリッド用: 祝日→終日は帯、時間指定はテキストのみ。
@@ -358,9 +442,26 @@ final class EventStore {
         }
     }
 
-    private static func fetchEvents(from context: ModelContext) -> [CalendarEvent] {
-        let descriptor = FetchDescriptor<StoredCalendarEvent>()
-        let rows = (try? context.fetch(descriptor)) ?? []
+    private static func fetchEvents(
+        from context: ModelContext,
+        from rangeStart: Date? = nil,
+        to rangeEnd: Date? = nil
+    ) -> [CalendarEvent] {
+        let rows: [StoredCalendarEvent]
+        if let rangeStart, let rangeEnd {
+            let start = rangeStart
+            let end = rangeEnd
+            let descriptor = FetchDescriptor<StoredCalendarEvent>(
+                predicate: #Predicate { row in
+                    row.end > start && row.start < end
+                }
+            )
+            rows = (try? context.fetch(descriptor)) ?? []
+        } else {
+            var descriptor = FetchDescriptor<StoredCalendarEvent>()
+            descriptor.fetchLimit = 8_000
+            rows = (try? context.fetch(descriptor)) ?? []
+        }
         return rows.map { $0.toCalendarEvent() }
     }
 

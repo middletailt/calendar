@@ -43,7 +43,6 @@ struct MonthCalendarPager: View {
                     .frame(width: width, height: height)
             }
             .offset(x: -width + totalOffset)
-            .drawingGroup(opaque: false)
             .animation(nil, value: dragTranslation)
             .contentShape(Rectangle())
             .highPriorityGesture(monthDragGesture(pageWidth: width))

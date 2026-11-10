@@ -49,6 +49,7 @@
 		E10000010000000000000043 /* MonthCalendarPager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000010000000000000043 /* MonthCalendarPager.swift */; };
 		E10000010000000000000044 /* MonthUIKitScrollPager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000010000000000000044 /* MonthUIKitScrollPager.swift */; };
 		E10000010000000000000045 /* MonthPagerStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000010000000000000045 /* MonthPagerStyle.swift */; };
+		E10000010000000000000046 /* MonthGridLimits.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000010000000000000046 /* MonthGridLimits.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -95,6 +96,7 @@
 		E20000010000000000000043 /* MonthCalendarPager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthCalendarPager.swift; sourceTree = "<group>"; };
 		E20000010000000000000044 /* MonthUIKitScrollPager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthUIKitScrollPager.swift; sourceTree = "<group>"; };
 		E20000010000000000000045 /* MonthPagerStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthPagerStyle.swift; sourceTree = "<group>"; };
+		E20000010000000000000046 /* MonthGridLimits.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthGridLimits.swift; sourceTree = "<group>"; };
 		E30000010000000000000001 /* Calendar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Calendar.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -188,6 +190,7 @@
 			children = (
 				E20000010000000000000011 /* MonthGridBuilder.swift */,
 				E20000010000000000000045 /* MonthPagerStyle.swift */,
+				E20000010000000000000046 /* MonthGridLimits.swift */,
 			);
 			path = Utilities;
 			sourceTree = "<group>";
@@ -340,6 +343,7 @@
 				E10000010000000000000043 /* MonthCalendarPager.swift in Sources */,
 				E10000010000000000000044 /* MonthUIKitScrollPager.swift in Sources */,
 				E10000010000000000000045 /* MonthPagerStyle.swift in Sources */,
+				E10000010000000000000046 /* MonthGridLimits.swift in Sources */,
 				E10000010000000000000013 /* MonthDayCell.swift in Sources */,
 				E10000010000000000000014 /* DayEventsSheet.swift in Sources */,
 				E10000010000000000000015 /* EventEditorView.swift in Sources */,
