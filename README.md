@@ -4,11 +4,13 @@
 
 ## 要件（確定）
 
+- 動作環境: **iOS 18 以降**
 - 月ビューのみ（7 列 × 5〜6 行）
 - 日付タップ → 下部シート（予定一覧 + 予定を追加）
 - 予定編集: 複数日 ⇔ 繰り返しは厳格に排他
 - 複数 Google カレンダー購読、カレンダー別 `syncToken`
-- オフライン: A-アウトボックス（スタブあり）
+- オフライン: A-アウトボックス（SwiftData の `StoredOutboxItem`）
+- ローカル永続化: SwiftData（予定・購読カレンダー・Outbox）
 
 ## 開発
 
@@ -31,9 +33,17 @@ xcodebuild -project Calendar.xcodeproj -scheme Calendar \
 
 詳細は [docs/DESIGN.md](docs/DESIGN.md)。
 
+## Google Calendar
+
+セットアップ手順: [docs/google-calendar-setup.md](docs/google-calendar-setup.md)
+
+- OAuth（`ASWebAuthenticationSession`）+ トークン Keychain
+- `calendarList` / `events.list`（syncToken 差分）
+- 予定作成 → Outbox → `events.insert`
+
 ## 未実装
 
-- Google OAuth / Calendar API
-- 永続化（SwiftData / SQLite）
+- 予定の更新・削除、編集画面からの同期
+- 永続化（イベントキャッシュの再起動後復元）
 - ローカル通知
 - 検索

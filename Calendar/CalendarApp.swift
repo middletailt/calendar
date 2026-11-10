@@ -8,6 +8,8 @@ struct CalendarApp: App {
         WindowGroup {
             MainCalendarView()
                 .environment(appState)
+                .tint(CalendarTheme.accent)
         }
+        .modelContainer(appState.modelContainer)
     }
 }

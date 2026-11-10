@@ -64,6 +64,13 @@ struct YearMonth: Hashable, Equatable {
         return YearMonth(year: comps.year!, month: comps.month!)
     }
 
+    /// 前後関係・スライド方向の判定用（1ヶ月 = 1）。
+    var monthOrdinal: Int { year * 12 + month }
+
+    func slideDirection(to other: YearMonth) -> MonthSlideDirection {
+        other.monthOrdinal >= monthOrdinal ? .forward : .backward
+    }
+
     func addingMonths(_ delta: Int, calendar: Calendar = .current) -> YearMonth {
         var comps = DateComponents()
         comps.year = year
@@ -76,4 +83,41 @@ struct YearMonth: Hashable, Equatable {
         let c = calendar.dateComponents([.year, .month], from: next)
         return YearMonth(year: c.year!, month: c.month!)
     }
+
+    func startDate(calendar: Calendar = .current) -> Date? {
+        var comps = DateComponents()
+        comps.year = year
+        comps.month = month
+        comps.day = 1
+        return calendar.date(from: comps)
+    }
+
+    /// `timeMax` 用（当月末の翌日 0:00 = 当月を含む）
+    func endDateExclusive(calendar: Calendar = .current) -> Date? {
+        guard let start = startDate(calendar: calendar),
+              let nextMonth = calendar.date(byAdding: .month, value: 1, to: start) else {
+            return nil
+        }
+        return nextMonth
+    }
+
+    /// 中心月 ± `radiusMonths` の `timeMin` / `timeMax`（計 2×radius+1 ヶ月）。
+    static func syncTimeRange(
+        center: YearMonth,
+        radiusMonths: Int,
+        calendar: Calendar = .current
+    ) -> (timeMin: Date, timeMax: Date)? {
+        let first = center.addingMonths(-radiusMonths, calendar: calendar)
+        let last = center.addingMonths(radiusMonths, calendar: calendar)
+        guard let timeMin = first.startDate(calendar: calendar),
+              let timeMax = last.endDateExclusive(calendar: calendar) else {
+            return nil
+        }
+        return (timeMin, timeMax)
+    }
+}
+
+enum MonthSlideDirection {
+    case forward
+    case backward
 }

@@ -1,4 +1,5 @@
 import Foundation
+import SwiftData
 import SwiftUI
 import Observation
 
@@ -6,8 +7,156 @@ import Observation
 final class EventStore {
     private(set) var events: [CalendarEvent]
 
-    init(events: [CalendarEvent] = EventStore.previewEvents) {
-        self.events = events
+    private let context: ModelContext?
+
+    init(events: [CalendarEvent] = [], context: ModelContext? = nil) {
+        self.context = context
+        if let context, events.isEmpty {
+            self.events = Self.fetchEvents(from: context)
+            dedupeSyncedEvents()
+        } else {
+            self.events = events
+        }
+    }
+
+    func clearAll() {
+        events = []
+        guard let context else { return }
+        if let stored = try? context.fetch(FetchDescriptor<StoredCalendarEvent>()) {
+            for row in stored {
+                context.delete(row)
+            }
+        }
+        try? context.save()
+    }
+
+    /// 初回・フル同期: そのカレンダーの同期済み予定をリモート一覧で置き換える。
+    func applyFullPull(calendarId: String, remote: [CalendarEvent]) {
+        let pending = events.filter { $0.calendarId == calendarId && $0.syncState != .synced }
+        events.removeAll { $0.calendarId == calendarId && $0.syncState == .synced }
+        events.append(contentsOf: remote)
+        events.append(contentsOf: pending)
+
+        guard let context else { return }
+        deleteStoredSynced(calendarId: calendarId, in: context)
+        for event in remote {
+            upsertStored(event, in: context)
+        }
+        try? context.save()
+    }
+
+    /// 期間リスト同期: 取得範囲のイベントをマージ（範囲外の既存データは残す）。
+    func applyRangeMerge(calendarId: String, remote: [CalendarEvent], deletedGoogleIds: [String]) {
+        for googleId in deletedGoogleIds {
+            events.removeAll { $0.calendarId == calendarId && $0.googleEventId == googleId }
+            deleteStored(googleEventId: googleId, calendarId: calendarId)
+        }
+        for event in remote where event.syncState == .synced {
+            if let googleEventId = event.googleEventId {
+                removeDuplicates(calendarId: calendarId, googleEventId: googleEventId, keepingId: event.id)
+            }
+            if let index = events.firstIndex(where: { $0.id == event.id }) {
+                events[index] = event
+            } else {
+                events.append(event)
+            }
+            upsertStored(event)
+        }
+        try? context?.save()
+    }
+
+    /// 増分同期: 変更分のみマージし、キャンセル分は削除する。
+    func applyIncrementalPull(calendarId: String, remote: [CalendarEvent], deletedGoogleIds: [String]) {
+        for googleId in deletedGoogleIds {
+            events.removeAll { $0.calendarId == calendarId && $0.googleEventId == googleId }
+            deleteStored(googleEventId: googleId, calendarId: calendarId)
+        }
+        for event in remote {
+            if let googleEventId = event.googleEventId {
+                removeDuplicates(calendarId: calendarId, googleEventId: googleEventId, keepingId: event.id)
+            }
+            if let index = events.firstIndex(where: { $0.id == event.id }) {
+                events[index] = event
+            } else {
+                events.append(event)
+            }
+            upsertStored(event)
+        }
+        try? context?.save()
+    }
+
+    func hasSyncedEvents(for calendarId: String) -> Bool {
+        events.contains { $0.calendarId == calendarId && $0.syncState == .synced }
+    }
+
+    func markPendingCreated(calendarId: String, title: String, googleEventId: String) {
+        guard let index = events.firstIndex(where: {
+            $0.calendarId == calendarId && $0.syncState == .pendingCreate && $0.title == title && $0.googleEventId == nil
+        }) else { return }
+        let oldId = events[index].id
+        let newId = "\(calendarId):\(googleEventId)"
+        events[index].googleEventId = googleEventId
+        events[index].syncState = .synced
+        events[index].id = newId
+        removeDuplicates(calendarId: calendarId, googleEventId: googleEventId, keepingId: newId)
+        if oldId != newId {
+            deleteStored(eventId: oldId)
+        }
+        upsertStored(events[index])
+        try? context?.save()
+    }
+
+    func event(id: String) -> CalendarEvent? {
+        events.first { $0.id == id }
+    }
+
+    func search(query: String, visibleCalendarIds: Set<String>, limit: Int = 80) -> [CalendarEvent] {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return [] }
+        return events
+            .filter { visibleCalendarIds.contains($0.calendarId) }
+            .filter { event in
+                event.title.localizedCaseInsensitiveContains(trimmed)
+                    || event.location?.localizedCaseInsensitiveContains(trimmed) == true
+                    || event.notes?.localizedCaseInsensitiveContains(trimmed) == true
+                    || event.url?.absoluteString.localizedCaseInsensitiveContains(trimmed) == true
+            }
+            .sorted { $0.start < $1.start }
+            .prefix(limit)
+            .map { $0 }
+    }
+
+    func update(from draft: EventDraft, calendar: SubscribedCalendar, sync: GoogleCalendarSyncing) {
+        guard let eventId = draft.editingEventId,
+              let index = events.firstIndex(where: { $0.id == eventId }) else { return }
+        let prior = events[index]
+        let updated = event(from: draft, calendar: calendar, base: prior)
+        events[index] = updated
+        upsertStored(updated)
+        try? context?.save()
+        Task {
+            if prior.googleEventId != nil {
+                await sync.enqueueUpdate(draft: draft)
+            }
+        }
+    }
+
+    func markSyncedAfterUpdate(eventId: String) {
+        guard let index = events.firstIndex(where: { $0.id == eventId }) else { return }
+        events[index].syncState = .synced
+        upsertStored(events[index])
+        try? context?.save()
+    }
+
+    func delete(event: CalendarEvent, sync: GoogleCalendarSyncing) {
+        events.removeAll { $0.id == event.id }
+        deleteStored(eventId: event.id)
+        try? context?.save()
+        if let googleEventId = event.googleEventId {
+            Task {
+                await sync.enqueueDelete(calendarId: event.calendarId, googleEventId: googleEventId)
+            }
+        }
     }
 
     func events(on day: LocalDay, visibleCalendarIds: Set<String>) -> [CalendarEvent] {
@@ -17,8 +166,54 @@ final class EventStore {
             .sorted(by: { $0.start < $1.start })
     }
 
-    func titlesForMonthCell(day: LocalDay, visibleCalendarIds: Set<String>) -> [String] {
-        events(on: day, visibleCalendarIds: visibleCalendarIds).map(\.title)
+    /// 月グリッド 1 枚分の行データをまとめて構築（ドラッグ中の再計算を抑える）。
+    func eventLinesByDay(
+        for month: YearMonth,
+        visibleCalendarIds: Set<String>,
+        holidayCalendarIds: Set<String>
+    ) -> [LocalDay: [MonthCellEventLine]] {
+        let days = MonthGridBuilder.days(for: month)
+        var map: [LocalDay: [MonthCellEventLine]] = [:]
+        map.reserveCapacity(days.count)
+        for cell in days {
+            map[cell.day] = monthCellEventLines(
+                on: cell.day,
+                visibleCalendarIds: visibleCalendarIds,
+                holidayCalendarIds: holidayCalendarIds
+            )
+        }
+        return map
+    }
+
+    /// 月グリッド用: 祝日→終日は帯、時間指定はテキストのみ。
+    func monthCellEventLines(
+        on day: LocalDay,
+        visibleCalendarIds: Set<String>,
+        holidayCalendarIds: Set<String>
+    ) -> [MonthCellEventLine] {
+        let ids = visibleCalendarIds.union(holidayCalendarIds)
+        let dayEvents = events
+            .filter { ids.contains($0.calendarId) }
+            .filter { $0.occurs(on: day) }
+            .sorted { lhs, rhs in
+                let lhsHoliday = holidayCalendarIds.contains(lhs.calendarId)
+                let rhsHoliday = holidayCalendarIds.contains(rhs.calendarId)
+                if lhsHoliday != rhsHoliday { return lhsHoliday }
+                if lhs.isAllDay != rhs.isAllDay { return lhs.isAllDay }
+                return lhs.start < rhs.start
+            }
+
+        return dayEvents.map { event in
+            let isHoliday = holidayCalendarIds.contains(event.calendarId)
+            let useBand = isHoliday || event.isAllDay
+            return MonthCellEventLine(
+                id: event.id,
+                title: event.title,
+                isHoliday: isHoliday,
+                style: useBand ? .band : .compact,
+                accentColor: event.color
+            )
+        }
     }
 
     func add(from draft: EventDraft, calendar: SubscribedCalendar, sync: GoogleCalendarSyncing) {
@@ -33,7 +228,9 @@ final class EventStore {
             var master = makeEvent(from: draft, calendar: calendar, start: draft.start, end: draft.end)
             master.title += " (\(rule.frequency.title))"
             events.append(master)
+            upsertStored(master)
         }
+        try? context?.save()
         Task {
             await sync.enqueueSave(draft: draft)
         }
@@ -55,7 +252,9 @@ final class EventStore {
             start = cal.date(bySettingHour: sh, minute: sm, second: 0, of: dayDate) ?? dayDate
             end = cal.date(bySettingHour: eh, minute: em, second: 0, of: dayDate) ?? dayDate
         }
-        events.append(makeEvent(from: draft, calendar: calendar, start: start, end: end))
+        let event = makeEvent(from: draft, calendar: calendar, start: start, end: end)
+        events.append(event)
+        upsertStored(event)
     }
 
     private func makeEvent(
@@ -76,8 +275,134 @@ final class EventStore {
             url: URL(string: draft.urlString),
             notes: draft.notes.isEmpty ? nil : draft.notes,
             syncState: .pendingCreate,
+            reminderMinutes: draft.reminderMinutes,
             color: calendar.color
         )
+    }
+
+    private func event(from draft: EventDraft, calendar: SubscribedCalendar, base: CalendarEvent) -> CalendarEvent {
+        let cal = Calendar.current
+        var start = draft.start
+        var end = draft.end
+        if draft.isAllDay {
+            let day = LocalDay(draft.start)
+            if let dayDate = day.date(calendar: cal) {
+                start = dayDate
+                end = cal.date(byAdding: .day, value: 1, to: dayDate) ?? dayDate
+            }
+        }
+        let syncState: SyncState = base.googleEventId == nil ? base.syncState : .pendingUpdate
+        return CalendarEvent(
+            id: base.id,
+            googleEventId: base.googleEventId,
+            calendarId: calendar.id,
+            title: draft.title.isEmpty ? "(タイトルなし)" : draft.title,
+            isAllDay: draft.isAllDay,
+            start: start,
+            end: end,
+            location: draft.location.isEmpty ? nil : draft.location,
+            url: URL(string: draft.urlString),
+            notes: draft.notes.isEmpty ? nil : draft.notes,
+            syncState: syncState,
+            reminderMinutes: draft.reminderMinutes,
+            color: calendar.color
+        )
+    }
+
+    private func deleteStored(eventId: String) {
+        guard let context else { return }
+        var descriptor = FetchDescriptor<StoredCalendarEvent>(
+            predicate: #Predicate { $0.id == eventId }
+        )
+        descriptor.fetchLimit = 1
+        if let row = try? context.fetch(descriptor).first {
+            context.delete(row)
+        }
+    }
+
+    private func removeDuplicates(calendarId: String, googleEventId: String, keepingId: String) {
+        let duplicates = events.filter {
+            $0.calendarId == calendarId && $0.googleEventId == googleEventId && $0.id != keepingId
+        }
+        for duplicate in duplicates {
+            events.removeAll { $0.id == duplicate.id }
+            deleteStored(eventId: duplicate.id)
+        }
+    }
+
+    /// 起動時など: 同一 googleEventId の重複行（旧 UUID など）を掃除する。
+    private func dedupeSyncedEvents() {
+        var keepers: [String: String] = [:]
+        var removeIds: [String] = []
+        for event in events {
+            guard let googleEventId = event.googleEventId else { continue }
+            let key = "\(event.calendarId):\(googleEventId)"
+            if let existingId = keepers[key] {
+                let preferCanonical = event.id == key || existingId != key
+                if preferCanonical && event.id == key {
+                    removeIds.append(existingId)
+                    keepers[key] = event.id
+                } else {
+                    removeIds.append(event.id)
+                }
+            } else {
+                keepers[key] = event.id
+            }
+        }
+        for id in Set(removeIds) {
+            events.removeAll { $0.id == id }
+            deleteStored(eventId: id)
+        }
+        if !removeIds.isEmpty {
+            try? context?.save()
+        }
+    }
+
+    private static func fetchEvents(from context: ModelContext) -> [CalendarEvent] {
+        let descriptor = FetchDescriptor<StoredCalendarEvent>()
+        let rows = (try? context.fetch(descriptor)) ?? []
+        return rows.map { $0.toCalendarEvent() }
+    }
+
+    private func upsertStored(_ event: CalendarEvent, in context: ModelContext? = nil) {
+        let ctx = context ?? self.context
+        guard let ctx else { return }
+        let eventId = event.id
+        var descriptor = FetchDescriptor<StoredCalendarEvent>(
+            predicate: #Predicate { $0.id == eventId }
+        )
+        descriptor.fetchLimit = 1
+        if let existing = try? ctx.fetch(descriptor).first {
+            existing.apply(from: event)
+        } else {
+            ctx.insert(StoredCalendarEvent(from: event))
+        }
+    }
+
+    private func deleteStoredSynced(calendarId: String, in context: ModelContext) {
+        let syncedRaw = SyncState.synced.rawValue
+        let descriptor = FetchDescriptor<StoredCalendarEvent>(
+            predicate: #Predicate {
+                $0.calendarId == calendarId && $0.syncStateRaw == syncedRaw
+            }
+        )
+        let rows = (try? context.fetch(descriptor)) ?? []
+        for row in rows {
+            context.delete(row)
+        }
+    }
+
+    private func deleteStored(googleEventId: String, calendarId: String) {
+        guard let context else { return }
+        var descriptor = FetchDescriptor<StoredCalendarEvent>(
+            predicate: #Predicate {
+                $0.calendarId == calendarId && $0.googleEventId == googleEventId
+            }
+        )
+        descriptor.fetchLimit = 1
+        if let row = try? context.fetch(descriptor).first {
+            context.delete(row)
+        }
     }
 
     static let previewEvents: [CalendarEvent] = {
@@ -102,6 +427,7 @@ final class EventStore {
                 url: nil,
                 notes: nil,
                 syncState: .synced,
+                reminderMinutes: [30],
                 color: .blue
             ),
         ]

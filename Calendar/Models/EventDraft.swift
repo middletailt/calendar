@@ -3,6 +3,10 @@ import Observation
 
 @Observable
 final class EventDraft {
+    /// 編集時のローカル ID（`CalendarEvent.id`）。
+    var editingEventId: String?
+    var editingGoogleEventId: String?
+
     var calendarId: String
     var title: String
     var isAllDay: Bool
@@ -32,7 +36,27 @@ final class EventDraft {
         location = ""
         urlString = ""
         notes = ""
+        editingEventId = nil
+        editingGoogleEventId = nil
     }
+
+    convenience init(from event: CalendarEvent, calendar: Calendar = .current) {
+        self.init(calendarId: event.calendarId, startDay: LocalDay(event.start, calendar: calendar))
+        editingEventId = event.id
+        editingGoogleEventId = event.googleEventId
+        title = event.title == "(タイトルなし)" ? "" : event.title
+        isAllDay = event.isAllDay
+        start = event.start
+        end = event.isAllDay ? max(event.end, event.start) : event.end
+        selectedDays = [LocalDay(event.start, calendar: calendar)]
+        recurrence = .none
+        reminderMinutes = event.reminderMinutes
+        location = event.location ?? ""
+        urlString = event.url?.absoluteString ?? ""
+        notes = event.notes ?? ""
+    }
+
+    var isEditing: Bool { editingEventId != nil }
 
     var multiDaySummary: String {
         let sorted = selectedDays.sorted()

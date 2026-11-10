@@ -2,86 +2,201 @@ import SwiftUI
 
 struct MainCalendarView: View {
     @Environment(AppState.self) private var appState
-    @State private var visibleMonth = YearMonth(year: 2027, month: 3)
-    @State private var selectedDay: LocalDay?
+    @Environment(\.colorScheme) private var colorScheme
+    @State private var visibleMonth = YearMonth.current()
+    @State private var selectedDay: LocalDay? = LocalDay(Date())
     @State private var isDaySheetPresented = false
     @State private var showNewEvent = false
     @State private var showSettings = false
+    @State private var showMonthPicker = false
+    @State private var showSearch = false
+    @State private var presentedEvent: CalendarEvent?
+    @State private var editingEvent: CalendarEvent?
+    @State private var pagerPageModels: (MonthGridPageModel, MonthGridPageModel, MonthGridPageModel)?
 
-    private let syncService: GoogleCalendarSyncing = StubGoogleCalendarSync()
-    private let columns = Array(repeating: GridItem(.flexible(), spacing: 0), count: 7)
+    private let daySheetAnimation: Animation = .easeOut(duration: 0.32)
 
     private var visibleCalendarIds: Set<String> {
         Set(appState.calendarStore.calendars.filter(\.isVisible).map(\.id))
     }
 
+    private var visibleHolidayCalendarIds: Set<String> {
+        Set(
+            appState.calendarStore.calendars
+                .filter { $0.isJapaneseHolidayCalendar && $0.isVisible }
+                .map(\.id)
+        )
+    }
+
     var body: some View {
         NavigationStack {
-            ZStack(alignment: .bottom) {
-                VStack(spacing: 0) {
-                    header
-                    weekdayHeader
-                    monthGrid
-                        .padding(.horizontal, 4)
-                    Spacer(minLength: 0)
-                }
-                .background(Color(red: 0.93, green: 0.93, blue: 0.96))
+            GeometryReader { geometry in
+                ZStack(alignment: .bottom) {
+                    VStack(spacing: 0) {
+                        header
+                        calendarBlock
+                            .padding(.horizontal, 4)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                    }
+                    .background(CalendarTheme.canvasBackground)
 
-                if isDaySheetPresented, let selectedDay {
-                    DayEventsSheet(
-                        day: selectedDay,
-                        events: appState.eventStore.events(on: selectedDay, visibleCalendarIds: visibleCalendarIds),
-                        onClose: { isDaySheetPresented = false },
-                        onAddEvent: {
-                            showNewEvent = true
-                        }
-                    )
-                    .transition(.move(edge: .bottom))
+                    if isDaySheetPresented, let selectedDay {
+                        DayEventsSheet(
+                            day: selectedDay,
+                            events: appState.eventStore.events(on: selectedDay, visibleCalendarIds: visibleCalendarIds),
+                            onClose: dismissDaySheet,
+                            onAddEvent: {
+                                showNewEvent = true
+                            },
+                            onSelectEvent: { event in
+                                presentedEvent = event
+                            }
+                        )
+                        .frame(height: geometry.size.height / 3)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+                        .transition(.move(edge: .bottom))
+                        .zIndex(1)
+                    }
                 }
-
-                bottomBar
+                .animation(daySheetAnimation, value: isDaySheetPresented)
             }
             .navigationBarHidden(true)
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                bottomToolbar
+            }
             .sheet(isPresented: $showNewEvent) {
                 newEventEditor
             }
-            .sheet(isPresented: $showSettings) {
-                SettingsPlaceholderView()
+            .sheet(isPresented: $showSearch) {
+                EventSearchView(visibleCalendarIds: visibleCalendarIds) { event in
+                    showSearch = false
+                    presentedEvent = event
+                }
             }
+            .sheet(item: $presentedEvent) { event in
+                eventDetailSheet(for: event)
+            }
+            .sheet(item: $editingEvent) { event in
+                eventEditor(for: event)
+            }
+            .sheet(isPresented: $showSettings) {
+                GoogleSettingsView()
+            }
+            .sheet(isPresented: $showMonthPicker) {
+                MonthYearPickerSheet(current: visibleMonth) { newMonth in
+                    setVisibleMonth(newMonth)
+                }
+            }
+            .tint(CalendarTheme.accent)
+            .task {
+                _ = await appState.localNotifications.requestAuthorizationIfNeeded()
+                if appState.googleSync.isSignedIn {
+                    try? await appState.googleSync.syncAllCalendars()
+                    await prefetchMonthsAroundVisible()
+                }
+                await appState.rebuildNotifications()
+            }
+            .onAppear { rebuildPagerPageModels() }
+            .onChange(of: visibleMonth) { _, _ in rebuildPagerPageModels() }
+            .onChange(of: selectedDay) { _, _ in rebuildPagerPageModels() }
+            .onChange(of: appState.eventStore.events.count) { _, _ in rebuildPagerPageModels() }
+        }
+    }
+
+    private func setVisibleMonth(_ newMonth: YearMonth) {
+        guard newMonth != visibleMonth else { return }
+        visibleMonth = newMonth
+        rebuildPagerPageModels()
+        Task { await prefetchMonthsAroundVisible() }
+    }
+
+    private func rebuildPagerPageModels() {
+        let today = LocalDay(Date())
+        pagerPageModels = (
+            makePagerPageModel(for: visibleMonth.addingMonths(-1), today: today),
+            makePagerPageModel(for: visibleMonth, today: today),
+            makePagerPageModel(for: visibleMonth.addingMonths(1), today: today)
+        )
+    }
+
+    private func makePagerPageModel(for month: YearMonth, today: LocalDay) -> MonthGridPageModel {
+        MonthGridPageModel(
+            month: month,
+            days: MonthGridBuilder.days(for: month),
+            linesByDay: appState.eventStore.eventLinesByDay(
+                for: month,
+                visibleCalendarIds: visibleCalendarIds,
+                holidayCalendarIds: visibleHolidayCalendarIds
+            ),
+            selectedDay: selectedDay,
+            today: today
+        )
+    }
+
+    private func prefetchMonthsAroundVisible() async {
+        guard appState.googleSync.isSignedIn else { return }
+        let center = visibleMonth
+        await appState.googleSync.ensureSynced(for: center)
+        await appState.googleSync.ensureSynced(for: center.addingMonths(-1))
+        await appState.googleSync.ensureSynced(for: center.addingMonths(1))
+    }
+
+    private func presentDaySheet() {
+        withAnimation(daySheetAnimation) {
+            isDaySheetPresented = true
+        }
+    }
+
+    private func dismissDaySheet() {
+        withAnimation(daySheetAnimation) {
+            isDaySheetPresented = false
         }
     }
 
     private var header: some View {
         HStack {
-            Text(visibleMonthTitle)
-                .font(.title2)
-                .fontWeight(.bold)
+            Button {
+                showMonthPicker = true
+            } label: {
+                Text(monthTitle(for: visibleMonth))
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .foregroundStyle(CalendarTheme.ink)
+            }
+            .buttonStyle(.plain)
+
             Spacer()
             HStack(spacing: 12) {
-                Button {} label: {
+                Button { showSearch = true } label: {
                     Image(systemName: "magnifyingglass")
-                        .foregroundStyle(.primary)
+                        .foregroundStyle(CalendarTheme.ink)
                 }
                 Button { showSettings = true } label: {
                     ZStack(alignment: .topTrailing) {
                         Image(systemName: "gearshape")
-                            .foregroundStyle(.primary)
+                            .foregroundStyle(CalendarTheme.ink)
+                        if settingsBadgeVisible {
+                            Circle()
+                                .fill(.red)
+                                .frame(width: 8, height: 8)
+                                .offset(x: 4, y: -4)
+                        }
                     }
                 }
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 8)
-            .background(Color.white.opacity(0.8), in: Capsule())
+            .background(CalendarTheme.elevatedControl.opacity(0.95), in: Capsule())
         }
         .padding(.horizontal, 16)
         .padding(.top, 8)
         .padding(.bottom, 4)
     }
 
-    private var visibleMonthTitle: String {
+    private func monthTitle(for month: YearMonth) -> String {
         var comps = DateComponents()
-        comps.year = visibleMonth.year
-        comps.month = visibleMonth.month
+        comps.year = month.year
+        comps.month = month.month
         comps.day = 1
         guard let date = Calendar.current.date(from: comps) else { return "" }
         let f = DateFormatter()
@@ -90,64 +205,39 @@ struct MainCalendarView: View {
         return f.string(from: date)
     }
 
-    private var weekdayHeader: some View {
-        HStack {
-            ForEach(Array(["日", "月", "火", "水", "木", "金", "土"].enumerated()), id: \.offset) { index, label in
-                Text(label)
-                    .font(.subheadline)
-                    .foregroundStyle(weekdayColor(index))
-                    .frame(maxWidth: .infinity)
-            }
-        }
-        .padding(.horizontal, 8)
-        .padding(.bottom, 4)
-    }
+    private var calendarBlock: some View {
+        VStack(spacing: 0) {
+            Rectangle()
+                .fill(CalendarTheme.gridSeparator)
+                .frame(height: 0.5)
 
-    private func weekdayColor(_ index: Int) -> Color {
-        switch index {
-        case 0: .red
-        case 6: .blue
-        default: .secondary
-        }
-    }
-
-    private var monthGrid: some View {
-        let days = MonthGridBuilder.days(for: visibleMonth)
-        return LazyVGrid(columns: columns, spacing: 0) {
-            ForEach(days) { cell in
-                MonthDayCell(
-                    day: cell.day,
-                    isInMonth: cell.isInDisplayedMonth,
-                    isSelected: selectedDay == cell.day,
-                    eventTitles: appState.eventStore.titlesForMonthCell(
-                        day: cell.day,
-                        visibleCalendarIds: visibleCalendarIds
-                    )
-                )
-                .onTapGesture {
-                    selectedDay = cell.day
-                    withAnimation(.easeOut(duration: 0.22)) {
-                        isDaySheetPresented = true
+            if let pagerPageModels {
+                MonthCalendarPager(
+                    prev: pagerPageModels.0,
+                    center: pagerPageModels.1,
+                    next: pagerPageModels.2,
+                    visibleMonth: $visibleMonth,
+                    onMonthCommitted: { _ in
+                        rebuildPagerPageModels()
+                        Task { await prefetchMonthsAroundVisible() }
+                    },
+                    onSelectDay: { day in
+                        selectedDay = day
+                        presentDaySheet()
                     }
-                }
+                )
             }
+
+            Rectangle()
+                .fill(CalendarTheme.gridSeparator)
+                .frame(height: 0.5)
         }
-        .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .background(CalendarTheme.cardBackground)
     }
 
-    private var bottomBar: some View {
+    private var bottomToolbar: some View {
         HStack {
-            Button {
-                visibleMonth = visibleMonth.addingMonths(-1)
-            } label: {
-                Image(systemName: "arrow.uturn.backward")
-                    .font(.title3)
-                    .frame(width: 52, height: 52)
-                    .background(Color.white, in: Circle())
-                    .shadow(color: .black.opacity(0.08), radius: 4, y: 2)
-            }
-            Spacer()
+            Spacer(minLength: 0)
             Button {
                 if selectedDay == nil {
                     selectedDay = LocalDay(Date())
@@ -156,14 +246,56 @@ struct MainCalendarView: View {
             } label: {
                 Image(systemName: "plus")
                     .font(.title2.weight(.semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: 56, height: 56)
-                    .background(Color(red: 0.15, green: 0.28, blue: 0.55), in: Circle())
-                    .shadow(color: .black.opacity(0.15), radius: 6, y: 3)
+                    .foregroundStyle(CalendarTheme.fabForeground)
+                    .frame(width: 52, height: 52)
+                    .background(CalendarTheme.accent, in: Circle())
             }
+            .accessibilityLabel("新しい予定")
         }
-        .padding(.horizontal, 24)
-        .padding(.bottom, 12)
+        .padding(.horizontal, 20)
+        .padding(.top, 6)
+        .padding(.bottom, 8)
+        .frame(maxWidth: .infinity)
+        .background(CalendarTheme.canvasBackground)
+        .overlay(alignment: .top) {
+            Rectangle()
+                .fill(CalendarTheme.gridSeparator.opacity(0.35))
+                .frame(height: 0.5)
+        }
+    }
+
+    @ViewBuilder
+    private func eventDetailSheet(for event: CalendarEvent) -> some View {
+        let calendar = appState.calendarStore.calendar(id: event.calendarId)
+        EventDetailView(
+            event: event,
+            calendarTitle: calendar?.title ?? event.calendarId,
+            canEdit: calendar?.canWrite == true,
+            onEdit: {
+                presentedEvent = nil
+                editingEvent = event
+            },
+            onDelete: {
+                appState.eventStore.delete(event: event, sync: appState.googleSync)
+                Task { await appState.rebuildNotifications() }
+            }
+        )
+    }
+
+    @ViewBuilder
+    private func eventEditor(for event: CalendarEvent) -> some View {
+        EventEditorView(
+            draft: EventDraft(from: event),
+            calendarStore: appState.calendarStore,
+            onCancel: { editingEvent = nil },
+            onSave: { draft in
+                if let cal = appState.calendarStore.calendar(id: draft.calendarId) {
+                    appState.eventStore.update(from: draft, calendar: cal, sync: appState.googleSync)
+                }
+                Task { await appState.rebuildNotifications() }
+                editingEvent = nil
+            }
+        )
     }
 
     @ViewBuilder
@@ -178,15 +310,26 @@ struct MainCalendarView: View {
             onCancel: { showNewEvent = false },
             onSave: { draft in
                 if let cal = appState.calendarStore.calendar(id: draft.calendarId) {
-                    appState.eventStore.add(from: draft, calendar: cal, sync: syncService)
+                    appState.eventStore.add(from: draft, calendar: cal, sync: appState.googleSync)
                 }
+                Task { await appState.rebuildNotifications() }
                 showNewEvent = false
             }
         )
     }
+
+    private var settingsBadgeVisible: Bool {
+        appState.googleSync.lastError != nil || (!appState.googleSync.isSignedIn && GoogleOAuthConfig.isConfigured)
+    }
 }
 
-#Preview {
+#Preview("Light") {
     MainCalendarView()
-        .environment(AppState())
+        .environment(AppState.preview)
+}
+
+#Preview("Dark") {
+    MainCalendarView()
+        .environment(AppState.preview)
+        .preferredColorScheme(.dark)
 }

@@ -1,4 +1,6 @@
 import Foundation
+import SwiftUI
+import UIKit
 
 struct MonthGridDay: Identifiable, Hashable {
     var id: String { "\(day.year)-\(day.month)-\(day.day)" }
@@ -33,5 +35,45 @@ enum MonthGridBuilder {
                 && calendar.component(.year, from: date) == month.year
             return MonthGridDay(day: day, isInDisplayedMonth: inMonth)
         }
+    }
+}
+
+// MARK: - ライト / ダーク両対応のカレンダー用カラー
+
+enum CalendarTheme {
+    static let canvasBackground = Color(uiColor: .systemGroupedBackground)
+    static let cardBackground = Color(uiColor: .secondarySystemGroupedBackground)
+    static let cellBackground = Color(uiColor: .systemBackground)
+    static let elevatedControl = Color(uiColor: .secondarySystemBackground)
+
+    static let ink = Color.primary
+    static let inkSecondary = Color.secondary
+    static let inkMuted = Color(uiColor: .tertiaryLabel)
+
+    static let sunday = Color.red
+    static let saturday = Color.blue
+    static let holiday = Color.red
+
+    static let accent = Color(
+        uiColor: UIColor { traits in
+            traits.userInterfaceStyle == .dark
+                ? UIColor(red: 0.38, green: 0.58, blue: 1.0, alpha: 1)
+                : UIColor(red: 0.15, green: 0.28, blue: 0.55, alpha: 1)
+        }
+    )
+
+    static let gridSeparator = Color(uiColor: .separator)
+    static let fabForeground = Color.white
+
+    static func floatingShadowOpacity(_ scheme: ColorScheme) -> Double {
+        scheme == .dark ? 0.45 : 0.12
+    }
+
+    static func multiDaySelectionFill(_ scheme: ColorScheme) -> Color {
+        scheme == .dark ? accent.opacity(0.35) : accent.opacity(0.18)
+    }
+
+    static func todayCellFill(_ scheme: ColorScheme) -> Color {
+        scheme == .dark ? accent.opacity(0.24) : accent.opacity(0.14)
     }
 }

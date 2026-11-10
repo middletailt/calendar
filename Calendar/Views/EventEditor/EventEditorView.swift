@@ -18,8 +18,8 @@ struct EventEditorView: View {
                 }
                 .padding(16)
             }
-            .background(Color(red: 0.93, green: 0.93, blue: 0.96))
-            .navigationTitle("新しい予定")
+            .background(CalendarTheme.canvasBackground)
+            .navigationTitle(draft.isEditing ? "予定を編集" : "新しい予定")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -30,7 +30,7 @@ struct EventEditorView: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button { onSave(draft) } label: {
                         Image(systemName: "checkmark.circle.fill")
-                            .symbolRenderingMode(.hierarchy)
+                            .symbolRenderingMode(.multicolor)
                             .foregroundStyle(.blue)
                             .font(.title2)
                     }
@@ -128,7 +128,7 @@ struct EventEditorView: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 16))
+        .background(CalendarTheme.cardBackground, in: RoundedRectangle(cornerRadius: 16))
     }
 
     private func cardRow<Trailing: View>(title: String, @ViewBuilder trailing: () -> Trailing) -> some View {
@@ -139,7 +139,7 @@ struct EventEditorView: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 16))
+        .background(CalendarTheme.cardBackground, in: RoundedRectangle(cornerRadius: 16))
     }
 
     private func menuRow(title: String, value: String) -> some View {
@@ -193,23 +193,3 @@ struct CalendarPickerView: View {
     }
 }
 
-struct SettingsPlaceholderView: View {
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        NavigationStack {
-            List {
-                Section("同期") {
-                    Text("Google カレンダー連携（未実装）")
-                    Text("カレンダーごとの syncToken")
-                }
-            }
-            .navigationTitle("設定")
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("閉じる") { dismiss() }
-                }
-            }
-        }
-    }
-}

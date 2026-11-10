@@ -1,6 +1,6 @@
 import Foundation
 
-enum RecurrenceFrequency: String, CaseIterable, Identifiable {
+enum RecurrenceFrequency: String, CaseIterable, Identifiable, Codable {
     case none
     case daily
     case weekly
@@ -20,13 +20,13 @@ enum RecurrenceFrequency: String, CaseIterable, Identifiable {
     }
 }
 
-enum RecurrenceEnd: Equatable, Hashable {
+enum RecurrenceEnd: Equatable, Hashable, Codable {
     case never
     case count(Int)
     case until(LocalDay)
 }
 
-struct RecurrenceRule: Equatable, Hashable {
+struct RecurrenceRule: Equatable, Hashable, Codable {
     var frequency: RecurrenceFrequency
     var interval: Int
     var end: RecurrenceEnd

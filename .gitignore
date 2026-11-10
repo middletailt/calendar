@@ -27,6 +27,7 @@ Package.resolved
 .env
 .env.*
 GoogleService-Info.plist
+Calendar/Resources/GoogleOAuth.plist
 **/Credentials*.plist
 
 # macOS

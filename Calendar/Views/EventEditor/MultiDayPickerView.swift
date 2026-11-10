@@ -3,6 +3,7 @@ import SwiftUI
 struct MultiDayPickerView: View {
     @Bindable var draft: EventDraft
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
     @State private var visibleMonth: YearMonth
     @State private var workingSelection: Set<LocalDay>
 
@@ -21,17 +22,17 @@ struct MultiDayPickerView: View {
                 Button { dismiss() } label: {
                     Image(systemName: "xmark")
                         .padding(10)
-                        .background(Color.white, in: Circle())
+                        .foregroundStyle(CalendarTheme.ink)
+                        .background(CalendarTheme.elevatedControl, in: Circle())
                 }
                 Spacer()
-                Button(confirm) {
-                    draft.applySelectedDays(workingSelection)
-                    dismiss()
+                Button {
+                    applySelection()
                 } label: {
                     Image(systemName: "checkmark")
                         .foregroundStyle(.white)
                         .padding(10)
-                        .background(Color.blue, in: Circle())
+                        .background(CalendarTheme.accent, in: Circle())
                 }
             }
             .padding(.horizontal)
@@ -48,7 +49,8 @@ struct MultiDayPickerView: View {
                     MultiSelectDayCell(
                         day: cell.day,
                         isInMonth: cell.isInDisplayedMonth,
-                        isSelected: workingSelection.contains(cell.day)
+                        isSelected: workingSelection.contains(cell.day),
+                        colorScheme: colorScheme
                     )
                     .onTapGesture {
                         toggle(cell.day)
@@ -56,7 +58,7 @@ struct MultiDayPickerView: View {
                 }
             }
             .padding(.horizontal, 8)
-            .background(Color.white)
+            .background(CalendarTheme.cardBackground)
 
             if workingSelection.count > 1 {
                 Text("複数日を選択すると繰り返しはリセットされます。")
@@ -67,7 +69,7 @@ struct MultiDayPickerView: View {
             Spacer()
         }
         .padding(.top, 8)
-        .background(Color(red: 0.93, green: 0.93, blue: 0.96))
+        .background(CalendarTheme.canvasBackground)
         .navigationBarHidden(true)
     }
 
@@ -113,10 +115,12 @@ struct MultiDayPickerView: View {
         }
     }
 
-    private func confirm() {
+    private func applySelection() {
         if workingSelection.isEmpty {
             workingSelection = [LocalDay(draft.start)]
         }
+        draft.applySelectedDays(workingSelection)
+        dismiss()
     }
 }
 
@@ -124,13 +128,23 @@ struct MultiSelectDayCell: View {
     var day: LocalDay
     var isInMonth: Bool
     var isSelected: Bool
+    var colorScheme: ColorScheme
+
+    private var textColor: Color {
+        if !isInMonth { return CalendarTheme.inkMuted }
+        switch day.weekdayIndex {
+        case 1: return CalendarTheme.sunday
+        case 7: return CalendarTheme.saturday
+        default: return CalendarTheme.ink
+        }
+    }
 
     var body: some View {
         Text("\(day.day)")
             .font(.body)
             .frame(maxWidth: .infinity, minHeight: 44)
-            .foregroundStyle(isInMonth ? .primary : .secondary.opacity(0.5))
-            .background(isSelected ? Color.blue.opacity(0.2) : Color.white)
-            .overlay(Rectangle().stroke(Color(white: 0.9), lineWidth: 0.5))
+            .foregroundStyle(textColor)
+            .background(isSelected ? CalendarTheme.multiDaySelectionFill(colorScheme) : CalendarTheme.cellBackground)
+            .overlay(Rectangle().stroke(CalendarTheme.gridSeparator.opacity(0.6), lineWidth: 0.5))
     }
 }

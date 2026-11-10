@@ -13,6 +13,7 @@ struct CalendarEvent: Identifiable, Hashable {
     var url: URL?
     var notes: String?
     var syncState: SyncState
+    var reminderMinutes: [Int]
     var color: Color
 
     var localDay: LocalDay { LocalDay(start) }
@@ -20,7 +21,10 @@ struct CalendarEvent: Identifiable, Hashable {
     func occurs(on day: LocalDay, calendar: Calendar = .current) -> Bool {
         let eventDay = LocalDay(start, calendar: calendar)
         if isAllDay {
-            let endDay = LocalDay(end, calendar: calendar)
+            var endDay = LocalDay(end, calendar: calendar)
+            if endDay <= eventDay {
+                return day == eventDay
+            }
             return day >= eventDay && day < endDay
         }
         return eventDay == day

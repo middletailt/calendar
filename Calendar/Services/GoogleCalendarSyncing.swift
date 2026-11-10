@@ -1,20 +1,36 @@
 import Foundation
 
-/// Google Calendar API + outbox (A-アウトボックス) — implementation TBD.
-protocol GoogleCalendarSyncing: Sendable {
+/// Google Calendar API + outbox (A-アウトボックス).
+@MainActor
+protocol GoogleCalendarSyncing: AnyObject {
+    var isSignedIn: Bool { get }
+    var isSyncing: Bool { get }
+    var lastError: String? { get }
+
     func signInIfNeeded() async throws
+    func signIn() async throws
+    func signOut()
     func syncAllCalendars() async throws
+    /// 表示中の月が未取得なら、その周辺を `events.list` で取得する。
+    func ensureSynced(for visibleMonth: YearMonth) async
     func enqueueSave(draft: EventDraft) async
+    func enqueueUpdate(draft: EventDraft) async
+    func enqueueDelete(calendarId: String, googleEventId: String) async
 }
 
 final class StubGoogleCalendarSync: GoogleCalendarSyncing {
+    var isSignedIn = false
+    var isSyncing = false
+    var lastError: String?
+
     func signInIfNeeded() async throws {}
-
+    func signIn() async throws {}
+    func signOut() {}
     func syncAllCalendars() async throws {}
-
-    func enqueueSave(draft: EventDraft) async {
-        // Outbox placeholder: push when online.
-    }
+    func ensureSynced(for visibleMonth: YearMonth) async {}
+    func enqueueSave(draft: EventDraft) async {}
+    func enqueueUpdate(draft: EventDraft) async {}
+    func enqueueDelete(calendarId: String, googleEventId: String) async {}
 }
 
 /// Per-calendar sync token and pull/push pipelines.
@@ -38,12 +54,16 @@ enum OutboxOperation: Codable {
 }
 
 struct EventDraftPayload: Codable {
+    var localEventId: String?
+    var googleEventId: String?
+    var calendarId: String
     var title: String
     var isAllDay: Bool
     var startISO8601: String
     var endISO8601: String
     var selectedDays: [LocalDay]
-    var recurrenceRRULE: String?
+    var recurrence: RecurrenceRule
+    var reminderMinutes: [Int]
     var location: String?
     var url: String?
     var notes: String?

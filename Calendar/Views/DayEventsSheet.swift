@@ -1,16 +1,20 @@
 import SwiftUI
 
 struct DayEventsSheet: View {
+    @Environment(\.colorScheme) private var colorScheme
+
     var day: LocalDay
     var events: [CalendarEvent]
     var onClose: () -> Void
     var onAddEvent: () -> Void
+    var onSelectEvent: (CalendarEvent) -> Void
 
     var body: some View {
         VStack(spacing: 0) {
             HStack {
                 Text(day.formattedLong())
                     .font(.headline)
+                    .foregroundStyle(CalendarTheme.ink)
                 Spacer()
                 Button(action: onClose) {
                     Image(systemName: "xmark")
@@ -19,8 +23,8 @@ struct DayEventsSheet: View {
                 }
             }
             .padding(.horizontal, 16)
-            .padding(.top, 14)
-            .padding(.bottom, 8)
+            .padding(.top, 12)
+            .padding(.bottom, 6)
 
             if events.isEmpty {
                 Text("予定はありません")
@@ -28,42 +32,52 @@ struct DayEventsSheet: View {
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 16)
-                    .padding(.bottom, 8)
             } else {
                 ScrollView {
                     VStack(spacing: 0) {
                         ForEach(events) { event in
-                            DayEventRow(event: event)
+                            Button {
+                                onSelectEvent(event)
+                            } label: {
+                                DayEventRow(event: event)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
                         }
                     }
                 }
-                .frame(maxHeight: 160)
             }
+
+            Spacer(minLength: 0)
 
             Button(action: onAddEvent) {
                 Label("予定を追加", systemImage: "plus")
                     .font(.body.weight(.medium))
+                    .foregroundStyle(CalendarTheme.ink)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background(Color(white: 0.94), in: Capsule())
+                    .padding(.vertical, 12)
+                    .background(CalendarTheme.elevatedControl, in: Capsule())
             }
             .padding(.horizontal, 16)
-            .padding(.vertical, 12)
+            .padding(.bottom, 12)
         }
-        .background(
-            RoundedRectangle(cornerRadius: 20)
-                .fill(Color.white)
-                .shadow(color: .black.opacity(0.12), radius: 12, y: -4)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .background(CalendarTheme.cellBackground)
+        .clipShape(
+            UnevenRoundedRectangle(
+                topLeadingRadius: 16,
+                topTrailingRadius: 16
+            )
         )
-        .padding(.horizontal, 8)
-        .padding(.bottom, 80)
+        .shadow(color: .black.opacity(CalendarTheme.floatingShadowOpacity(colorScheme)), radius: 12, y: -4)
     }
 }
 
 struct DayEventRow: View {
     var event: CalendarEvent
 
-  private var timeText: String {
+    private var timeText: String {
         if event.isAllDay { return "終日" }
         let f = DateFormatter()
         f.dateFormat = "HH:mm"
@@ -83,12 +97,14 @@ struct DayEventRow: View {
                 .padding(.vertical, 2)
             Text(event.title)
                 .font(.body)
+                .foregroundStyle(CalendarTheme.ink)
             Spacer()
             Image(systemName: "chevron.right")
                 .font(.caption)
                 .foregroundStyle(.tertiary)
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 10)
+        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
