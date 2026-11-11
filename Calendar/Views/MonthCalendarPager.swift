@@ -20,44 +20,67 @@ struct MonthCalendarPager: View {
 
     @State private var committedOffset: CGFloat = 0
     @GestureState private var dragTranslation: CGFloat = 0
-    @State private var commitTask: Task<Void, Never>?
+    @State private var isSettlingPage = false
 
-    private let settleAnimation = Animation.easeOut(duration: 0.2)
+    /// 指離し後のページ追従（残り距離が短くても急に畳まない）
+    private let pageSettleSpring = Animation.spring(response: 0.16, dampingFraction: 0.9, blendDuration: 0.12)
+    /// 50% 未満キャンセル用（`withAnimation` が効くよう `.animation(nil)` は committedOffset に付けない）
+    private let pageSnapBackAnimation = Animation.easeOut(duration: 0.15)
 
     private var totalOffset: CGFloat { committedOffset + dragTranslation }
+
+    private func monthPageStack(width: CGFloat, height: CGFloat) -> some View {
+        HStack(spacing: 0) {
+            MonthGridPageView(model: prev, onSelectDay: onSelectDay)
+                .equatable()
+                .frame(width: width, height: height)
+            MonthGridPageView(model: center, onSelectDay: onSelectDay)
+                .equatable()
+                .frame(width: width, height: height)
+            MonthGridPageView(model: next, onSelectDay: onSelectDay)
+                .equatable()
+                .frame(width: width, height: height)
+        }
+        .frame(width: width * 3, alignment: .leading)
+    }
 
     var body: some View {
         GeometryReader { geo in
             let width = geo.size.width
             let height = geo.size.height
 
-            HStack(spacing: 0) {
-                MonthGridPageView(model: prev, onSelectDay: onSelectDay)
-                    .equatable()
-                    .frame(width: width, height: height)
-                MonthGridPageView(model: center, onSelectDay: onSelectDay)
-                    .equatable()
-                    .frame(width: width, height: height)
-                MonthGridPageView(model: next, onSelectDay: onSelectDay)
-                    .equatable()
-                    .frame(width: width, height: height)
+            ZStack(alignment: .leading) {
+                CalendarTheme.cardBackground
+                monthPageStack(width: width, height: height)
+                    .offset(x: -width + totalOffset)
             }
-            .offset(x: -width + totalOffset)
+            .frame(width: width, height: height, alignment: .leading)
+            .clipShape(Rectangle())
             .animation(nil, value: dragTranslation)
             .contentShape(Rectangle())
             .highPriorityGesture(monthDragGesture(pageWidth: width))
         }
-        .clipped()
+        .background(CalendarTheme.cardBackground)
         .onChange(of: visibleMonth) { _, _ in
-            committedOffset = 0
-            commitTask?.cancel()
+            isSettlingPage = false
+        }
+        /// 月確定後のリセンタのみ（スナップバックアニメ中は触らない）
+        .onChange(of: center.month) { _, _ in
+            guard abs(committedOffset) > 1 else { return }
+            var transaction = Transaction()
+            transaction.disablesAnimations = true
+            withTransaction(transaction) {
+                committedOffset = 0
+            }
         }
     }
 
     private func monthDragGesture(pageWidth width: CGFloat) -> some Gesture {
         DragGesture(minimumDistance: 4, coordinateSpace: .local)
             .updating($dragTranslation) { value, state, _ in
-                commitTask?.cancel()
+                if isSettlingPage {
+                    flushInFlightPageTurn(pageWidth: width)
+                }
                 state = value.translation.width
             }
             .onEnded { value in
@@ -70,14 +93,25 @@ struct MonthCalendarPager: View {
                     return
                 }
 
-                let threshold = min(44, width * 0.11)
-                let fling = abs(predicted - horizontal) > width * 0.15
-                let shouldNext = horizontal < -threshold || (horizontal < 0 && fling && predicted < -threshold)
-                let shouldPrev = horizontal > threshold || (horizontal > 0 && fling && predicted > threshold)
+                let halfPage = width * 0.5
+                let flickCarry = predicted - horizontal
+                let minFlickTravel = min(36, width * 0.09)
+                let isFlick = abs(flickCarry) > width * 0.14
+                    && abs(horizontal) >= minFlickTravel
+                    && abs(predicted) > abs(horizontal)
 
-                if shouldNext {
+                if isFlick {
+                    if horizontal < 0 {
+                        finishSwipe(forward: true, pageWidth: width, releaseOffset: horizontal)
+                    } else {
+                        finishSwipe(forward: false, pageWidth: width, releaseOffset: horizontal)
+                    }
+                    return
+                }
+
+                if horizontal <= -halfPage {
                     finishSwipe(forward: true, pageWidth: width, releaseOffset: horizontal)
-                } else if shouldPrev {
+                } else if horizontal >= halfPage {
                     finishSwipe(forward: false, pageWidth: width, releaseOffset: horizontal)
                 } else {
                     snapBack(from: horizontal)
@@ -85,31 +119,55 @@ struct MonthCalendarPager: View {
             }
     }
 
+    /// スナップ中に次のドラッグが入ったとき、見えている方向へ月を確定する。
+    private func flushInFlightPageTurn(pageWidth width: CGFloat) {
+        guard isSettlingPage else { return }
+        isSettlingPage = false
+
+        let offset = committedOffset
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction) {
+            if offset <= -width * 0.5 {
+                let next = visibleMonth.addingMonths(1)
+                visibleMonth = next
+                onMonthCommitted(next)
+            } else if offset >= width * 0.5 {
+                let next = visibleMonth.addingMonths(-1)
+                visibleMonth = next
+                onMonthCommitted(next)
+            } else {
+                committedOffset = 0
+            }
+        }
+    }
+
     private func snapBack(from releaseOffset: CGFloat) {
+        isSettlingPage = true
         committedOffset = releaseOffset
-        withAnimation(settleAnimation) {
+        withAnimation(pageSnapBackAnimation) {
             committedOffset = 0
+        } completion: {
+            isSettlingPage = false
         }
     }
 
     private func finishSwipe(forward: Bool, pageWidth width: CGFloat, releaseOffset: CGFloat) {
         let target = forward ? -width : width
-        let remaining = abs(target - releaseOffset)
-        let duration = 0.2 * min(1, remaining / width)
-        let settle = max(0.07, duration)
         let nextMonth = visibleMonth.addingMonths(forward ? 1 : -1)
+        let clampedRelease = max(-width, min(width, releaseOffset))
 
-        committedOffset = releaseOffset
-        withAnimation(.easeOut(duration: settle)) {
+        isSettlingPage = true
+        committedOffset = clampedRelease
+        withAnimation(pageSettleSpring) {
             committedOffset = target
-        }
-
-        commitTask?.cancel()
-        commitTask = Task { @MainActor in
-            try? await Task.sleep(for: .seconds(settle))
-            guard !Task.isCancelled else { return }
-            visibleMonth = nextMonth
-            committedOffset = 0
+        } completion: {
+            isSettlingPage = false
+            var transaction = Transaction()
+            transaction.disablesAnimations = true
+            withTransaction(transaction) {
+                visibleMonth = nextMonth
+            }
             onMonthCommitted(nextMonth)
         }
     }

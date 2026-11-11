@@ -82,13 +82,7 @@ final class EventDraft {
     }
 
     private func formatOffset(_ minutes: Int) -> String {
-        if minutes >= 24 * 60 {
-            return "\(minutes / (24 * 60))日前"
-        }
-        if minutes >= 60 {
-            return "\(minutes / 60)時間前"
-        }
-        return "\(minutes)分前"
+        EventReminderPresets.label(for: minutes) ?? "\(minutes)分前"
     }
 
     // MARK: - Mutual exclusion (複数日 ⇔ 繰り返し)

@@ -7,42 +7,12 @@ struct GoogleSettingsView: View {
 
     @State private var isWorking = false
     @State private var message: String?
-    @AppStorage(MonthPagerStyle.storageKey) private var monthPagerStyleRaw = MonthPagerStyle.swiftUIPager.rawValue
 
     private var sync: GoogleCalendarSyncService { appState.googleSync }
 
     var body: some View {
         NavigationStack {
             List {
-                Section("月グリッド（A/B）") {
-                    Picker("ページング実装", selection: $monthPagerStyleRaw) {
-                        ForEach(MonthPagerStyle.allCases) { style in
-                            Text(style.label).tag(style.rawValue)
-                        }
-                    }
-                    .pickerStyle(.inline)
-                    Text("変更はメイン画面に戻ると反映されます。")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-
-                Section("通知（ローカル）") {
-                    Text("リモート Push ではなく、端末内の予定リマインダーです。App ID の Push Notifications capability は不要です。")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    Button("通知を許可する") {
-                        Task {
-                            _ = await appState.localNotifications.requestAuthorizationIfNeeded()
-                            await appState.rebuildNotifications()
-                            await appState.localNotifications.refreshAuthorizationStatus()
-                        }
-                    }
-                    if let status = appState.localNotifications.authorizationStatus {
-                        Text(authorizationLabel(status))
-                            .font(.caption)
-                    }
-                }
-
                 Section("Google アカウント") {
                     if sync.isSignedIn {
                         Label("接続済み", systemImage: "checkmark.circle.fill")
@@ -84,6 +54,20 @@ struct GoogleSettingsView: View {
                             }
                             .disabled(!cal.canWrite && cal.accessRoleNote == nil)
                         }
+                    }
+                }
+
+                Section("通知") {
+                    Button("通知を許可する") {
+                        Task {
+                            _ = await appState.localNotifications.requestAuthorizationIfNeeded()
+                            await appState.rebuildNotifications()
+                            await appState.localNotifications.refreshAuthorizationStatus()
+                        }
+                    }
+                    if let status = appState.localNotifications.authorizationStatus {
+                        Text(authorizationLabel(status))
+                            .font(.caption)
                     }
                 }
 

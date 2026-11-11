@@ -8,6 +8,8 @@ final class EventStore {
     private(set) var events: [CalendarEvent]
 
     private let context: ModelContext?
+    /// `refreshMemoryCache` の中心。同期マージ後に窓へ戻すときに使う。
+    private var memoryCacheCenter = YearMonth.current()
 
     init(events: [CalendarEvent] = [], context: ModelContext? = nil) {
         self.context = context
@@ -51,6 +53,7 @@ final class EventStore {
             upsertStored(event, in: context)
         }
         try? context.save()
+        trimMemoryToWindowAfterSync()
     }
 
     /// 期間リスト同期: 取得範囲のイベントをマージ（範囲外の既存データは残す）。
@@ -71,6 +74,7 @@ final class EventStore {
             upsertStored(event)
         }
         try? context?.save()
+        trimMemoryToWindowAfterSync()
     }
 
     /// 増分同期: 変更分のみマージし、キャンセル分は削除する。
@@ -91,6 +95,7 @@ final class EventStore {
             upsertStored(event)
         }
         try? context?.save()
+        trimMemoryToWindowAfterSync()
     }
 
     func hasSyncedEvents(for calendarId: String) -> Bool {
@@ -182,6 +187,7 @@ final class EventStore {
 
     /// メモリ上の `events` を表示中心付近だけに絞る（ディスク上は全件のまま）。
     func refreshMemoryCache(center: YearMonth, radiusMonths: Int = MonthGridLimits.memoryWindowRadiusMonths) {
+        memoryCacheCenter = center
         guard let context else { return }
         guard let range = YearMonth.syncTimeRange(center: center, radiusMonths: radiusMonths) else { return }
 
@@ -192,6 +198,12 @@ final class EventStore {
             windowed.append(event)
         }
         events = windowed
+    }
+
+    /// Google 増分同期などで `events` に一時的に載った範囲外データを捨てる。
+    private func trimMemoryToWindowAfterSync() {
+        guard context != nil else { return }
+        refreshMemoryCache(center: memoryCacheCenter)
     }
 
     /// 通知再スケジュール用（直近のみ DB から取得）

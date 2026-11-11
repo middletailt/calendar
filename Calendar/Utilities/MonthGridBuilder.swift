@@ -43,6 +43,8 @@ enum MonthGridBuilder {
 enum CalendarTheme {
     static let canvasBackground = Color(uiColor: .systemGroupedBackground)
     static let cardBackground = Color(uiColor: .secondarySystemGroupedBackground)
+    /// パガー・UIScrollView の下地（スワイプ中の隙間に透けるのを防ぐ）
+    static let uiCardBackground = UIColor.secondarySystemGroupedBackground
     static let cellBackground = Color(uiColor: .systemBackground)
     static let elevatedControl = Color(uiColor: .secondarySystemBackground)
 

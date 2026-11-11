@@ -3,23 +3,20 @@ import SwiftUI
 struct MainCalendarView: View {
     @Environment(AppState.self) private var appState
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.scenePhase) private var scenePhase
     @State private var visibleMonth = YearMonth.current()
     @State private var selectedDay: LocalDay? = LocalDay(Date())
     @State private var isDaySheetPresented = false
     @State private var showNewEvent = false
+    /// 新規作成シート用。`nil` なら選択日ベースの空ドラフト。
+    @State private var newEventDraftSeed: EventDraft?
     @State private var showSettings = false
     @State private var showMonthPicker = false
     @State private var showSearch = false
     @State private var presentedEvent: CalendarEvent?
-    @State private var editingEvent: CalendarEvent?
     @State private var pagerPageModels: (MonthGridPageModel, MonthGridPageModel, MonthGridPageModel)?
-    @AppStorage(MonthPagerStyle.storageKey) private var monthPagerStyleRaw = MonthPagerStyle.swiftUIPager.rawValue
 
     private let daySheetAnimation: Animation = .easeOut(duration: 0.32)
-
-    private var monthPagerStyle: MonthPagerStyle {
-        MonthPagerStyle(rawValue: monthPagerStyleRaw) ?? .swiftUIPager
-    }
 
     private var visibleCalendarIds: Set<String> {
         Set(appState.calendarStore.calendars.filter(\.isVisible).map(\.id))
@@ -51,6 +48,7 @@ struct MainCalendarView: View {
                             events: appState.eventStore.events(on: selectedDay, visibleCalendarIds: visibleCalendarIds),
                             onClose: dismissDaySheet,
                             onAddEvent: {
+                                newEventDraftSeed = nil
                                 showNewEvent = true
                             },
                             onSelectEvent: { event in
@@ -69,8 +67,23 @@ struct MainCalendarView: View {
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 bottomToolbar
             }
-            .sheet(isPresented: $showNewEvent) {
-                newEventEditor
+            .sheet(isPresented: $showNewEvent, onDismiss: { newEventDraftSeed = nil }) {
+                NewEventEditorHost(
+                    draft: newEventDraftSeed ?? defaultNewEventDraft(),
+                    calendarStore: appState.calendarStore,
+                    onClose: {
+                        showNewEvent = false
+                        newEventDraftSeed = nil
+                    },
+                    onSave: { draft in
+                        if let cal = appState.calendarStore.calendar(id: draft.calendarId) {
+                            appState.eventStore.add(from: draft, calendar: cal, sync: appState.googleSync)
+                        }
+                        Task { await appState.rebuildNotifications() }
+                        showNewEvent = false
+                        newEventDraftSeed = nil
+                    }
+                )
             }
             .sheet(isPresented: $showSearch) {
                 EventSearchView(visibleCalendarIds: visibleCalendarIds) { event in
@@ -79,10 +92,7 @@ struct MainCalendarView: View {
                 }
             }
             .sheet(item: $presentedEvent) { event in
-                eventDetailSheet(for: event)
-            }
-            .sheet(item: $editingEvent) { event in
-                eventEditor(for: event)
+                existingEventEditor(for: event)
             }
             .sheet(isPresented: $showSettings) {
                 GoogleSettingsView()
@@ -115,6 +125,11 @@ struct MainCalendarView: View {
             .onChange(of: appState.eventStore.events.count) { _, _ in
                 appState.eventStore.refreshMemoryCache(center: visibleMonth)
                 rebuildPagerPageModels()
+            }
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .background || phase == .inactive {
+                    appState.eventStore.refreshMemoryCache(center: visibleMonth)
+                }
             }
         }
     }
@@ -185,11 +200,13 @@ struct MainCalendarView: View {
             HStack(spacing: 12) {
                 Button { showSearch = true } label: {
                     Image(systemName: "magnifyingglass")
+                        .font(.title2)
                         .foregroundStyle(CalendarTheme.ink)
                 }
                 Button { showSettings = true } label: {
                     ZStack(alignment: .topTrailing) {
                         Image(systemName: "gearshape")
+                            .font(.title2)
                             .foregroundStyle(CalendarTheme.ink)
                         if settingsBadgeVisible {
                             Circle()
@@ -221,7 +238,6 @@ struct MainCalendarView: View {
         return f.string(from: date)
     }
 
-    @ViewBuilder
     private func monthPagerView(
         models: (MonthGridPageModel, MonthGridPageModel, MonthGridPageModel)
     ) -> some View {
@@ -234,26 +250,14 @@ struct MainCalendarView: View {
             presentDaySheet()
         }
 
-        switch monthPagerStyle {
-        case .swiftUIPager:
-            MonthCalendarPager(
-                prev: models.0,
-                center: models.1,
-                next: models.2,
-                visibleMonth: $visibleMonth,
-                onMonthCommitted: onCommit,
-                onSelectDay: onDay
-            )
-        case .uiScrollView:
-            MonthUIKitScrollPager(
-                prev: models.0,
-                center: models.1,
-                next: models.2,
-                visibleMonth: $visibleMonth,
-                onMonthCommitted: onCommit,
-                onSelectDay: onDay
-            )
-        }
+        return MonthCalendarPager(
+            prev: models.0,
+            center: models.1,
+            next: models.2,
+            visibleMonth: $visibleMonth,
+            onMonthCommitted: onCommit,
+            onSelectDay: onDay
+        )
     }
 
     private var calendarBlock: some View {
@@ -264,7 +268,6 @@ struct MainCalendarView: View {
 
             if let pagerPageModels {
                 monthPagerView(models: pagerPageModels)
-                    .id(monthPagerStyle)
             }
 
             Rectangle()
@@ -281,6 +284,7 @@ struct MainCalendarView: View {
                 if selectedDay == nil {
                     selectedDay = LocalDay(Date())
                 }
+                newEventDraftSeed = nil
                 showNewEvent = true
             } label: {
                 Image(systemName: "plus")
@@ -304,61 +308,83 @@ struct MainCalendarView: View {
     }
 
     @ViewBuilder
-    private func eventDetailSheet(for event: CalendarEvent) -> some View {
-        let calendar = appState.calendarStore.calendar(id: event.calendarId)
-        EventDetailView(
-            event: event,
-            calendarTitle: calendar?.title ?? event.calendarId,
-            canEdit: calendar?.canWrite == true,
-            onEdit: {
-                presentedEvent = nil
-                editingEvent = event
-            },
-            onDelete: {
-                appState.eventStore.delete(event: event, sync: appState.googleSync)
-                Task { await appState.rebuildNotifications() }
-            }
-        )
-    }
-
-    @ViewBuilder
-    private func eventEditor(for event: CalendarEvent) -> some View {
+    private func existingEventEditor(for event: CalendarEvent) -> some View {
+        let canWrite = appState.calendarStore.calendar(id: event.calendarId)?.canWrite == true
         EventEditorView(
             draft: EventDraft(from: event),
             calendarStore: appState.calendarStore,
-            onCancel: { editingEvent = nil },
+            isReadOnly: !canWrite,
+            onCancel: { presentedEvent = nil },
             onSave: { draft in
                 if let cal = appState.calendarStore.calendar(id: draft.calendarId) {
                     appState.eventStore.update(from: draft, calendar: cal, sync: appState.googleSync)
                 }
                 Task { await appState.rebuildNotifications() }
-                editingEvent = nil
+                presentedEvent = nil
+            },
+            onDelete: canWrite ? {
+                appState.eventStore.delete(event: event, sync: appState.googleSync)
+                Task { await appState.rebuildNotifications() }
+                presentedEvent = nil
+            } : nil,
+            onCopy: { copyDraft in
+                newEventDraftSeed = copyDraftForNewEvent(from: copyDraft, sourceWritable: canWrite)
+                presentedEvent = nil
+                showNewEvent = true
             }
         )
     }
 
-    @ViewBuilder
-    private var newEventEditor: some View {
+    private func defaultNewEventDraft() -> EventDraft {
         let day = selectedDay ?? LocalDay(Date())
-        EventEditorView(
-            draft: EventDraft(
-                calendarId: appState.calendarStore.defaultCalendarId,
-                startDay: day
-            ),
-            calendarStore: appState.calendarStore,
-            onCancel: { showNewEvent = false },
-            onSave: { draft in
-                if let cal = appState.calendarStore.calendar(id: draft.calendarId) {
-                    appState.eventStore.add(from: draft, calendar: cal, sync: appState.googleSync)
-                }
-                Task { await appState.rebuildNotifications() }
-                showNewEvent = false
-            }
+        return EventDraft(
+            calendarId: appState.calendarStore.defaultCalendarId,
+            startDay: day
         )
+    }
+
+    private func copyDraftForNewEvent(from copyDraft: EventDraft, sourceWritable: Bool) -> EventDraft {
+        var draft = copyDraft
+        if !sourceWritable {
+            let fallback = appState.calendarStore.defaultCalendarId
+            if appState.calendarStore.calendar(id: fallback)?.canWrite == true {
+                draft.calendarId = fallback
+            }
+        }
+        return draft
     }
 
     private var settingsBadgeVisible: Bool {
         appState.googleSync.lastError != nil || (!appState.googleSync.isSignedIn && GoogleOAuthConfig.isConfigured)
+    }
+}
+
+/// 新規作成シート用に `EventDraft` を `@State` で保持する。
+private struct NewEventEditorHost: View {
+    @State private var draft: EventDraft
+    var calendarStore: SubscribedCalendarStore
+    var onClose: () -> Void
+    var onSave: (EventDraft) -> Void
+
+    init(
+        draft: EventDraft,
+        calendarStore: SubscribedCalendarStore,
+        onClose: @escaping () -> Void,
+        onSave: @escaping (EventDraft) -> Void
+    ) {
+        _draft = State(initialValue: draft)
+        self.calendarStore = calendarStore
+        self.onClose = onClose
+        self.onSave = onSave
+    }
+
+    var body: some View {
+        EventEditorView(
+            draft: draft,
+            calendarStore: calendarStore,
+            onCancel: onClose,
+            onSave: onSave
+        )
     }
 }
 

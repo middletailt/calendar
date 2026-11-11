@@ -44,12 +44,10 @@
 		E10000010000000000000035 /* ColorStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000010000000000000036 /* ColorStorage.swift */; };
 		E10000010000000000000037 /* MonthCellEventLine.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000010000000000000038 /* MonthCellEventLine.swift */; };
 		E10000010000000000000038 /* ClippingSingleLineText.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000010000000000000039 /* ClippingSingleLineText.swift */; };
-		E10000010000000000000039 /* EventDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000010000000000000040 /* EventDetailView.swift */; };
 		E10000010000000000000040 /* EventSearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000010000000000000041 /* EventSearchView.swift */; };
 		E10000010000000000000043 /* MonthCalendarPager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000010000000000000043 /* MonthCalendarPager.swift */; };
-		E10000010000000000000044 /* MonthUIKitScrollPager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000010000000000000044 /* MonthUIKitScrollPager.swift */; };
-		E10000010000000000000045 /* MonthPagerStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000010000000000000045 /* MonthPagerStyle.swift */; };
 		E10000010000000000000046 /* MonthGridLimits.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000010000000000000046 /* MonthGridLimits.swift */; };
+		E10000010000000000000047 /* EventReminderPresets.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000010000000000000047 /* EventReminderPresets.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -59,6 +57,7 @@
 		E20000010000000000000004 /* SyncState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncState.swift; sourceTree = "<group>"; };
 		E20000010000000000000005 /* RecurrenceRule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecurrenceRule.swift; sourceTree = "<group>"; };
 		E20000010000000000000006 /* EventDraft.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventDraft.swift; sourceTree = "<group>"; };
+		E20000010000000000000047 /* EventReminderPresets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventReminderPresets.swift; sourceTree = "<group>"; };
 		E20000010000000000000007 /* CalendarEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarEvent.swift; sourceTree = "<group>"; };
 		E20000010000000000000008 /* SubscribedCalendar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscribedCalendar.swift; sourceTree = "<group>"; };
 		E20000010000000000000009 /* EventStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventStore.swift; sourceTree = "<group>"; };
@@ -91,11 +90,8 @@
 		E20000010000000000000036 /* ColorStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorStorage.swift; sourceTree = "<group>"; };
 		E20000010000000000000038 /* MonthCellEventLine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthCellEventLine.swift; sourceTree = "<group>"; };
 		E20000010000000000000039 /* ClippingSingleLineText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClippingSingleLineText.swift; sourceTree = "<group>"; };
-		E20000010000000000000040 /* EventDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventDetailView.swift; sourceTree = "<group>"; };
 		E20000010000000000000041 /* EventSearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventSearchView.swift; sourceTree = "<group>"; };
 		E20000010000000000000043 /* MonthCalendarPager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthCalendarPager.swift; sourceTree = "<group>"; };
-		E20000010000000000000044 /* MonthUIKitScrollPager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthUIKitScrollPager.swift; sourceTree = "<group>"; };
-		E20000010000000000000045 /* MonthPagerStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthPagerStyle.swift; sourceTree = "<group>"; };
 		E20000010000000000000046 /* MonthGridLimits.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthGridLimits.swift; sourceTree = "<group>"; };
 		E30000010000000000000001 /* Calendar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Calendar.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -167,6 +163,7 @@
 				E20000010000000000000004 /* SyncState.swift */,
 				E20000010000000000000005 /* RecurrenceRule.swift */,
 				E20000010000000000000006 /* EventDraft.swift */,
+				E20000010000000000000047 /* EventReminderPresets.swift */,
 				E20000010000000000000007 /* CalendarEvent.swift */,
 				E20000010000000000000038 /* MonthCellEventLine.swift */,
 				E20000010000000000000008 /* SubscribedCalendar.swift */,
@@ -189,7 +186,6 @@
 			isa = PBXGroup;
 			children = (
 				E20000010000000000000011 /* MonthGridBuilder.swift */,
-				E20000010000000000000045 /* MonthPagerStyle.swift */,
 				E20000010000000000000046 /* MonthGridLimits.swift */,
 			);
 			path = Utilities;
@@ -200,11 +196,9 @@
 			children = (
 				E20000010000000000000012 /* MainCalendarView.swift */,
 				E20000010000000000000043 /* MonthCalendarPager.swift */,
-				E20000010000000000000044 /* MonthUIKitScrollPager.swift */,
 				E20000010000000000000013 /* MonthDayCell.swift */,
 				E20000010000000000000039 /* ClippingSingleLineText.swift */,
 				E20000010000000000000014 /* DayEventsSheet.swift */,
-				E20000010000000000000040 /* EventDetailView.swift */,
 				E20000010000000000000041 /* EventSearchView.swift */,
 				E20000010000000000000033 /* MonthYearPickerSheet.swift */,
 				E50000010000000000000010 /* EventEditor */,
@@ -334,6 +328,7 @@
 				E10000010000000000000004 /* SyncState.swift in Sources */,
 				E10000010000000000000005 /* RecurrenceRule.swift in Sources */,
 				E10000010000000000000006 /* EventDraft.swift in Sources */,
+				E10000010000000000000047 /* EventReminderPresets.swift in Sources */,
 				E10000010000000000000007 /* CalendarEvent.swift in Sources */,
 				E10000010000000000000008 /* SubscribedCalendar.swift in Sources */,
 				E10000010000000000000009 /* EventStore.swift in Sources */,
@@ -341,8 +336,6 @@
 				E10000010000000000000011 /* MonthGridBuilder.swift in Sources */,
 				E10000010000000000000012 /* MainCalendarView.swift in Sources */,
 				E10000010000000000000043 /* MonthCalendarPager.swift in Sources */,
-				E10000010000000000000044 /* MonthUIKitScrollPager.swift in Sources */,
-				E10000010000000000000045 /* MonthPagerStyle.swift in Sources */,
 				E10000010000000000000046 /* MonthGridLimits.swift in Sources */,
 				E10000010000000000000013 /* MonthDayCell.swift in Sources */,
 				E10000010000000000000014 /* DayEventsSheet.swift in Sources */,
@@ -368,7 +361,6 @@
 				E10000010000000000000035 /* ColorStorage.swift in Sources */,
 				E10000010000000000000037 /* MonthCellEventLine.swift in Sources */,
 				E10000010000000000000038 /* ClippingSingleLineText.swift in Sources */,
-				E10000010000000000000039 /* EventDetailView.swift in Sources */,
 				E10000010000000000000040 /* EventSearchView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
